@@ -49,86 +49,52 @@ terminal AMPER, VLINE, PLUSPLUS, MINUSMINUS, EQUALEQUAL, NOTEQUAL, GREATEREQUAL,
 terminal int NUMBER;
 terminal String IDENT;
 
-nonterminal VarDeclList, MethodDeclList, VarDecl, MethodDecl;
-nonterminal FormPars, StatementList, FormParsList, FormParsDecl, Statement;
-nonterminal Expr, Designator, Term, Addop, Factor, ActPars, ActualParamList;
+nonterminal Program;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj ProgName, Program;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Type;
+nonterminal Designator, DesignatorList, DesignatorElem;
+nonterminal Relop, Addop, Mulop;
+nonterminal Expr;
 
-Program ::= (Program) PROG ProgName:n VarDeclList LBRACE MethodDeclList RBRACE;
-
-ProgName ::= (ProgName) IDENT:progName;
-
-VarDeclList ::= (VarDeclarations) VarDeclList VarDecl
-			|
-			(NoVarDecl)/* epsilon */
-			;
-			
-VarDecl ::= (VarDecl) Type:varType IDENT:varName SEMI;
+Designator ::= (Designator) IDENT DesignatorList;
 
 
-Type ::= (Type) IDENT:typeName;
+DesignatorList::= (HasDesignatorElem) DesignatorList DesignatorElem
+				  |
+				  (NoDesignatorElem) /* epsilon */
+				  ;
+				  
 
-MethodDeclList ::= (MethodDeclarations) MethodDeclList MethodDecl
-			|
-			(NoMethodDecl)/* epsilon */
-			;
+DesignatorElem ::= (DotIdentDesignatorElem) PERIOD IDENT
+				   |
+				   (DotLengthDesignatorElem) PERIOD LEN
+				   |
+				   (ExprDesignatorElem) LBRACK Expr RBRACK
+				   ;
+				   
 
-MethodDecl ::= (MethodDeclaration) Type:retType IDENT:methName LPAREN FormPars RPAREN VarDeclList LBRACE StatementList RBRACE;
+Relop ::= (RelopEqualEqual) EQUALEQUAL
+		  |
+		  (RelopNotEqual) NOTEQUAL
+		  |
+		  (RelopGreater) GREATER
+		  |
+		  (RelopGreaterEqual) GREATEREQUAL
+		  |
+		  (RelopLess) LESS
+		  |
+		  (RelopLessEqual) LESSEQUAL
+		  ;
 
-FormPars ::= (FormalParameters) FormParsList
-			|
-			(NoFormalParameters)/* epsilon */
-			;
 
-FormParsList ::= (FormalParameterDeclarations) FormParsList COMMA FormParsDecl
-			|
-			(SingleFormalParameterDeclaration) FormParsDecl
-			;
-			
-StatementList ::= (Statements) StatementList Statement
-			|
-			(NoStatement)/*epsilon*/
-			;
-			
-Statement ::= (Assignment) Designator:dest EQUAL Expr:e SEMI
-			|
-			error SEMI:l
-			{: parser.report_error("Izvrsen oporavak do ; u liniji " + lleft, null); :}
-			|
-			(PrintStatement) PRINT LPAREN Expr RPAREN SEMI
-			|
-			(ReturnExpr) RETURN Expr SEMI
-			|
-			(ReturnNoExpr) RETURN SEMI
-			;
-			
-Expr ::=(AddExpr) Expr:te Addop Term:t
-	|
-	(TermExpr)Term:t
-	;
+Addop ::= (AddopPlus) PLUS
+		  |
+		  (AddopMinus) MINUS
+		  ;
 
-Term ::= (Term) Factor:t;
 
-Factor ::= (FuncCall) Designator LPAREN ActPars RPAREN
-		|
-		(Var) Designator:d
-		|
-		(Const) NUMBER
-		;
-		
-ActPars ::= (Actuals) ActualParamList
-			|
-			(NoActual) /* epsilon */
-			;
-
-ActualParamList ::= (ActualParams) ActualParamList COMMA Expr
-				|
-				(ActualParam) Expr
-				;
-
-Designator ::= (Designator) IDENT:name;
-
-Addop ::= (Addop) PLUS;
-
+Mulop ::= (MulopStar) STAR
+		  |
+		  (MulopDiv) DIV
+		  |
+		  (MulopMod) MOD
+		  ;
