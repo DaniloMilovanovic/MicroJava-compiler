@@ -57,6 +57,9 @@ import java_cup.runtime.Symbol;
 "switch" 	{ return new_symbol(sym.SWITCH, yytext()); }
 "case"      { return new_symbol(sym.CASE, yytext()); }
 
+"true"      { return new_symbol(sym.TRUE, yytext()); }
+"false"      { return new_symbol(sym.FALSE, yytext()); }
+
 "+" 		{ return new_symbol(sym.PLUS, yytext()); }
 "-" 		{ return new_symbol(sym.MINUS, yytext()); }
 "*" 		{ return new_symbol(sym.STAR, yytext()); }
@@ -71,7 +74,6 @@ import java_cup.runtime.Symbol;
 "."			{ return new_symbol(sym.PERIOD, yytext()); }
 "?" 		{ return new_symbol(sym.QMARK, yytext()); }
 "!" 		{ return new_symbol(sym.EMARK, yytext()); }
-"'" 		{ return new_symbol(sym.APOST, yytext()); }
 "(" 		{ return new_symbol(sym.LPAREN, yytext()); }
 ")" 		{ return new_symbol(sym.RPAREN, yytext()); }
 "{" 		{ return new_symbol(sym.LBRACE, yytext()); }
@@ -88,7 +90,7 @@ import java_cup.runtime.Symbol;
 "<=" 		{ return new_symbol(sym.LESSEQUAL, yytext()); }
 "&&" 		{ return new_symbol(sym.AMPERAMPER, yytext()); }
 "||" 		{ return new_symbol(sym.VLINEVLINE, yytext()); }
-
+'[ -~]'     { return new_symbol(sym.CHARCONST, yytext().charAt(1)); }
 
 
 "//" {yybegin(COMMENT);}

@@ -43,25 +43,339 @@ scan with {:
 :}
 
 
-terminal PROG, BREAK, ENUM, CLASS, ABSTRACT, ELSE, CONST, IF, NEW, PRINT, READ, RETURN, VOID, EXTENDS, CONTINUE, FOR, LEN, SWITCH, CASE;
-terminal PLUS, MINUS, STAR, DIV, MOD, EQUAL, LESS, GREATER, COLON, SEMI, COMMA, PERIOD, QMARK, EMARK, APOST, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
+terminal PROG, BREAK, ENUM, CLASS, ABSTRACT, ELSE, CONST, IF, NEW, PRINT, READ, RETURN, VOID, EXTENDS, CONTINUE, FOR, LEN, SWITCH, CASE, TRUE, FALSE;
+terminal PLUS, MINUS, STAR, DIV, MOD, EQUAL, LESS, GREATER, COLON, SEMI, COMMA, PERIOD, QMARK, EMARK, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal AMPER, VLINE, PLUSPLUS, MINUSMINUS, EQUALEQUAL, NOTEQUAL, GREATEREQUAL, LESSEQUAL, AMPERAMPER, VLINEVLINE;
 terminal int NUMBER;
 terminal String IDENT;
+terminal char CHARCONST;
 
-nonterminal Program;
+nonterminal Program, ProgDeclElemList, ProgDeclElem;
 
-nonterminal Designator, DesignatorList, DesignatorElem;
-nonterminal Relop, Addop, Mulop;
-nonterminal Expr;
+nonterminal ConstDecl, ConstDeclElem, ConstDeclElemList;
 
-Designator ::= (Designator) IDENT DesignatorList;
+nonterminal VarDecl, VarDeclElem, VarDeclElemList, VarDeclList;
+
+nonterminal EnumDecl, EnumDeclElem, EnumDeclElemList;
+
+nonterminal ClassDecl, ExtendsClassDecl, MethodDeclClassDecl;
+
+nonterminal AbstractClassDecl, AbstractMethodDeclAbstractClassDecl;
+
+nonterminal MethodDecl, TypeMethodDecl, FormParsMethodDecl, MethodDeclList;
+
+nonterminal AbstractMethodDecl, AbstractMethodDeclList;
+
+nonterminal FormPars, FormParsElem, FormParsElemList;
+
+nonterminal Statement, StatementList, MatchedStatement, UnmatchedStatement, CaseList, ForStatement, DSElemForStatement, CElemForStatement;
+
+nonterminal DesignatorStatement;
+
+nonterminal ActPars;
+
+nonterminal Condition;
+
+nonterminal CondTerm, CondTermList;
+
+nonterminal CondFact, CondFactList;
+
+nonterminal Expr, ExprList;
+
+nonterminal Term, TermList;
+
+nonterminal Factor, FactorList, ActParsFactor;
+
+nonterminal Designator, DesignatorElemList, DesignatorElem;
+
+nonterminal Assignop, Relop, Addop, Mulop;
+
+nonterminal Type, NumConst, CharConst, BoolConst;
 
 
-DesignatorList::= (HasDesignatorElem) DesignatorList DesignatorElem
+
+Program ::= (Program) PROG IDENT ProgDeclElemList LBRACE MethodDeclList RBRACE;
+
+ProgDeclElemList ::= (HasProgDeclElemList) ProgDeclElemList ProgDeclElem
+					 |
+					 (NoProgDeclElemList)/* epsilon */
+					 ;
+
+ProgDeclElem ::= (ConstProgDeclElem) ConstDecl
+				 |
+				 (VarProgDeclElem) VarDecl
+				 |
+				 (ClassProgDeclElem) ClassDecl
+				 |
+				 (EnumProgDeclElem) EnumDecl
+				 |
+				 (AbstractClassProgDeclElem) AbstractClassDecl
+				 ;
+
+ConstDecl ::= (ConstDecl) CONST Type ConstDeclElem ConstDeclElemList SEMI;
+
+ConstDeclElemList ::= (HasConstDeclElemList) ConstDeclElemList COMMA ConstDeclElem
+					  |
+					  (NoConstDeclElemList) /* epsilon */
+					  ;
+
+ConstDeclElem ::= (NumConstDeclElem) IDENT EQUAL NumConst
 				  |
-				  (NoDesignatorElem) /* epsilon */
+				  (CharConstDeclElem) IDENT EQUAL CharConst
+				  |
+				  (BoolConstDeclElem) IDENT EQUAL BoolConst
 				  ;
+
+
+VarDecl ::= (VarDecl) Type VarDeclElem VarDeclElemList SEMI;
+
+VarDeclElem ::= (BrackVarDeclElem) IDENT LBRACK RBRACK
+				|
+				(NoBrackVarDeclElem) IDENT
+				;
+
+VarDeclElemList ::= (HasVarDeclElemList) VarDeclElemList COMMA VarDeclElem
+					|
+					(NoVarDeclElemList) /* epsilon */
+					;
+
+VarDeclList ::= (HasVarDeclList) VarDeclList VarDecl
+				|
+				(NoVarDeclList) /* epsilon */
+				;
+
+
+
+EnumDecl ::= (EnumDecl) ENUM IDENT LBRACE EnumDeclElem EnumDeclElemList RBRACE;
+
+EnumDeclElemList ::= (HasEnumDeclElemList) EnumDeclElemList COMMA EnumDeclElem
+					 |
+					 (NoEnumDeclElemList) /* epsilon */
+					 ;
+
+EnumDeclElem ::= (NoValEnumDeclElem) IDENT
+				 |
+				 (ValEnumDeclElem) IDENT EQUAL NumConst
+				 ;
+
+
+
+
+ClassDecl ::= (ClassDecl) CLASS IDENT ExtendsClassDecl LBRACE VarDeclList MethodDeclClassDecl RBRACE;
+
+ExtendsClassDecl ::= (HasExtendsClassDecl) EXTENDS Type
+					 |
+					 (NoExtendsClassDecl) /* epsilon */
+					 ;
+
+MethodDeclClassDecl ::= (HasMethodDeclClassDecl) LBRACE MethodDeclClassDecl RBRACE
+						|
+						(NoMethodDeclClassDecl) /* epsilon */
+						;
+
+
+
+AbstractClassDecl ::= (AbstractClassDecl) ABSTRACT CLASS IDENT ExtendsClassDecl LBRACE VarDeclList AbstractMethodDeclAbstractClassDecl RBRACE;
+
+AbstractMethodDeclAbstractClassDecl ::= (HasAMDAbstractClassDecl) LBRACE AbstractMethodDeclList RBRACE
+										 |
+										 (NoAMDAbstractClassDecl) /* epsilon */
+										 ;
+
+
+MethodDecl ::= (MethodDecl) TypeMethodDecl IDENT LPAREN FormParsMethodDecl RPAREN VarDeclList LBRACE StatementList RBRACE;
+
+TypeMethodDecl ::= (TMethodDecl) Type
+				   |
+				   (VMethodDecl) VOID
+				   ;
+
+FormParsMethodDecl ::= (HasFormParsMethodDecl) FormPars
+					   |
+					   (NoFormParsMethodDecl) /* epsilon */
+					   ;
+
+MethodDeclList ::= (HasMethodDeclList) MethodDeclList MethodDecl
+				   |
+				   (NoMethodDeclList) /* epsilon */
+				   ;
+
+
+
+AbstractMethodDecl ::= (AbstractMethodDecl) ABSTRACT TypeMethodDecl IDENT LPAREN FormParsMethodDecl RPAREN;
+
+AbstractMethodDeclList ::= (HasMAbstractMethodDeclList) AbstractMethodDeclList MethodDecl
+						   |
+						   (HasAMAbstractMethodDeclList) AbstractMethodDeclList AbstractMethodDecl SEMI
+						   |
+						   (NoAbstractMethodDeclList) /* epsilon */
+						   ;
+
+
+
+
+FormPars ::= (FormPars) FormParsElem FormParsElemList;
+
+FormParsElem ::= (BrackFormParsElem) Type IDENT LBRACK RBRACK
+				 |
+				 (NoBrackFormParsElem) Type IDENT
+				 ;
+
+FormParsElemList ::= (HasFormParsElem) FormParsElemList COMMA FormParsElem
+					 |
+					 (NoFormParsElem) /* epsilon */
+					 ;
+
+
+
+Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
+			  |
+			  (IfStatement) IF LPAREN Condition RPAREN Statement ELSE Statement
+			  |
+			  (BStatement) BREAK SEMI
+			  |
+			  (CStatement) CONTINUE SEMI
+			  |
+			  (ExprRStatement) RETURN Expr SEMI
+			  |
+			  (NoExprRStatement) RETURN SEMI
+			  |
+			  (RStatement) READ LPAREN Designator RPAREN SEMI
+			  |
+			  (NumConstPStatement) PRINT LPAREN Expr COMMA NumConst RPAREN SEMI
+			  |
+			  (PStatement) PRINT LPAREN Expr RPAREN SEMI
+			  |
+			  (SWStatement) SWITCH LPAREN Expr RPAREN LBRACE CaseList RBRACE
+			  |
+			  (FStatement) ForStatement
+			  |
+			  (StatementList) LBRACE StatementList RBRACE
+			  ;
+
+CaseList ::= (HasCaseList) CaseList CASE NumConst COLON StatementList
+			 |
+			 (NoCaseList) /* epsilon */
+			 ;
+
+ForStatement ::= (ForStatement) FOR LPAREN DSElemForStatement SEMI CElemForStatement SEMI DSElemForStatement RPAREN Statement;
+
+DSElemForStatement ::= (HasDSElemForStatement) DesignatorStatement
+					   |
+					   (NoDSElemForStatement) /* epsilon */
+					   ;
+
+CElemForStatement ::= (HasCElemForStatement) Condition
+					  |
+					  (NoCElemForStatement) /* epsilon */
+					  ;
+
+StatementList ::= (HasStatementList) StatementList Statement
+				  |
+				  (NoStatementList) /* epsilon */
+				  ;
+
+
+
+DesignatorStatement ::= (AssignopDesignatorStatement) Designator Assignop Expr
+						|
+						(ActParsDesignatorStatement) Designator LPAREN ActPars RPAREN
+						|
+						(NoActParsDesignatorStatement) Designator LPAREN RPAREN
+						|
+						(PlusPlusDesignatorStatement) Designator PLUSPLUS
+						|
+						(MinusMinusDesignatorStatement) Designator MINUSMINUS
+						;
+
+
+
+ActPars ::= (ActPars) Expr ExprList;
+
+
+
+Condition ::= (Condition) CondTerm CondTermList;
+
+
+
+CondTerm ::= (CondTerm) CondFact CondFactList;
+
+CondTermList ::= (HasCondTermList) CondTermList VLINEVLINE CondTerm
+				 |
+				 (NoCondTermList) /* epsilon */
+				 ;
+
+
+
+CondFact ::= (ExprCondFact) Expr Relop Expr
+			 |
+			 (NoExprCondFact) Expr
+			 ;
+
+CondFactList ::= (HasCondFactList) CondFactList AMPERAMPER CondFact
+				 |
+				 (NoCondFactList) /* epsilon */
+				 ;
+
+
+
+Expr ::= (MinusExpr) MINUS Term TermList
+		 |
+		 (NoMinusExpr) Term TermList
+		 |
+		 (TernaryFactExpr) CondFact QMARK Expr COLON Expr
+		 |
+		 (TernaryExpr) Condition QMARK Expr COLON Expr
+		 ;
+
+ExprList ::= (HasExprList) ExprList COMMA Expr
+			 |
+			 (NoExprList) /* epsilon */
+			 ;
+
+
+Term ::= (Term) Factor FactorList;
+
+TermList ::= (HasTermList) Term Addop TermList
+			 |
+			 (NoTermList) /* epsilon */
+			 ;
+
+
+Factor ::= (DesignatorActParsFactor) Designator ActParsFactor
+		   |
+		   (NumFactor) NumConst
+		   |
+		   (CharFactor) CharConst
+		   |
+		   (BoolFactor) BoolConst
+		   |
+		   (NewExprFactor)NEW Type LBRACK Expr RBRACK 
+		   |
+		   (NewNoExprFactor)NEW Type
+		   |
+		   (ExprFactor) LPAREN Expr RPAREN
+		   ;
+
+FactorList ::= (HasFactorList) FactorList Mulop Factor
+			   |
+			   (NoFactorList) /* epsilon */
+			   ;
+
+ActParsFactor ::= (ParenNoActParsFactor) LPAREN RPAREN
+				  |
+				  (ParenActParsFactor) LPAREN ActPars RPAREN
+				  |
+				  (NoParenNoActParsFactor) /* epsilon */
+				  ;
+
+Designator ::= (Designator) IDENT DesignatorElemList;
+
+
+DesignatorElemList::= (HasDesignatorElem) DesignatorElemList DesignatorElem
+					  |
+					  (NoDesignatorElem) /* epsilon */
+					  ;
 				  
 
 DesignatorElem ::= (DotIdentDesignatorElem) PERIOD IDENT
@@ -70,7 +384,12 @@ DesignatorElem ::= (DotIdentDesignatorElem) PERIOD IDENT
 				   |
 				   (ExprDesignatorElem) LBRACK Expr RBRACK
 				   ;
-				   
+
+ 
+
+Assignop ::= (Assignop) EQUAL;
+
+
 
 Relop ::= (RelopEqualEqual) EQUALEQUAL
 		  |
@@ -86,10 +405,12 @@ Relop ::= (RelopEqualEqual) EQUALEQUAL
 		  ;
 
 
+
 Addop ::= (AddopPlus) PLUS
 		  |
 		  (AddopMinus) MINUS
 		  ;
+
 
 
 Mulop ::= (MulopStar) STAR
@@ -98,3 +419,21 @@ Mulop ::= (MulopStar) STAR
 		  |
 		  (MulopMod) MOD
 		  ;
+
+
+
+Type ::= (Type) IDENT;
+
+
+NumConst ::= (NumConst) NUMBER;
+
+
+CharConst ::= (CharConst) CHARCONST;
+
+
+BoolConst ::= (TrueBoolConst) TRUE
+			  |
+			  (FalseBoolConst) FALSE
+			  ;
+			  
+			  
