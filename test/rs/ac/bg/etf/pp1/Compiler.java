@@ -29,7 +29,7 @@ public class Compiler {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/program.mj"); //TODO: set as argv[1]
+			File sourceCode = new File("test/test303.mj"); //TODO: set as argv[1]
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));

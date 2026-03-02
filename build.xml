@@ -27,19 +27,43 @@
 	</target>
 
 	<target name="parserGen" depends="delete">
-		<java jar="lib/cup_v10k.jar" fork="true">
-			<arg value="-destdir"/>
-			<arg value="src/rs/ac/bg/etf/pp1"/>
-			<arg value="-ast"/>
-			<arg value="src.rs.ac.bg.etf.pp1.ast"/>
-			<arg value="-parser"/>
-			<arg value="MJParser"/>
-			<arg value="-dump_states"/>
-			<arg value="-buildtree"/>
-			<arg value="spec/mjparser.cup"/>
-		</java>
+	    <java jar="lib/cup_v10k.jar" fork="true">
+	        <arg value="-destdir"/>
+	        <arg value="src/rs/ac/bg/etf/pp1"/>
+	        <arg value="-ast"/>
+	        <arg value="src.rs.ac.bg.etf.pp1.ast"/>
+	        <arg value="-parser"/>
+	        <arg value="MJParser"/>
+	        <arg value="-dump_states"/>
+	        <arg value="-buildtree"/>
+	        <arg value="spec/mjparser.cup"/>
+	    </java>
 	</target>
-
+	
+	
+	<target name="parserGenFileErrors" depends="delete">
+	    <java jar="lib/cup_v10k.jar" fork="true" 
+	          output="logs/cup_output.txt"
+	          error="logs/cup_errors.txt"
+	          resultproperty="cup.result">
+	        <arg value="-destdir"/>
+	        <arg value="src/rs/ac/bg/etf/pp1"/>
+	        <arg value="-ast"/>
+	        <arg value="src.rs.ac.bg.etf.pp1.ast"/>
+	        <arg value="-parser"/>
+	        <arg value="MJParser"/>
+	        <arg value="-dump"/>
+	        <arg value="-buildtree"/>
+	        <arg value="spec/mjparser.cup"/>
+	    </java>
+	    
+	    <!-- Show the errors file which contains the conflicts -->
+	    <echo message="Conflicts and errors from CUP generation:"/>
+	    <concat>
+	        <fileset file="logs/cup_errors.txt"/>
+	    </concat>
+	</target>
+	
 	<target name="repackage" depends="parserGen">
 		<!-- Replaces all of the references to the old package name in files in the "src" directory -->
 		<replace dir="src" value="rs.ac.bg.etf.pp1.ast" token="src.rs.ac.bg.etf.pp1.ast" summary="true"/>

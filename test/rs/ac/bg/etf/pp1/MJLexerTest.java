@@ -14,7 +14,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 import rs.ac.bg.etf.pp1.util.Log4JUtils;
 
 //Lexer test
-public class MJTest {
+public class MJLexerTest {
 
 	static {
 		DOMConfigurator.configure(Log4JUtils.instance().findLoggerConfigFile());
@@ -22,7 +22,7 @@ public class MJTest {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		Logger log = Logger.getLogger(MJTest.class);
+		Logger log = Logger.getLogger(MJLexerTest.class);
 		Reader br = null;
 		try {
 			
@@ -39,6 +39,7 @@ public class MJTest {
 					log.info(tokenName + " " + currToken.toString() + " " + currToken.value.toString());
 				}
 			}
+			log.info("Finished compiling source file" + sourceCode.getAbsolutePath());
 		} 
 		finally {
 			if (br != null) try { br.close(); } catch (IOException e1) { log.error(e1.getMessage(), e1); }

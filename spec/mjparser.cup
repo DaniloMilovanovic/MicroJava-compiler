@@ -68,17 +68,17 @@ nonterminal AbstractMethodDecl, AbstractMethodDeclList;
 
 nonterminal FormPars, FormParsElem, FormParsElemList;
 
-nonterminal Statement, StatementList, MatchedStatement, UnmatchedStatement, CaseList, ForStatement, DSElemForStatement, CElemForStatement;
+nonterminal Statement, StatementList, CaseList, ForStatement, DSElemForStatement, CElemForStatement, IfBlockStart;
 
 nonterminal DesignatorStatement;
 
 nonterminal ActPars;
 
-nonterminal Condition, NoTernaryCondition;
+nonterminal Condition;
 
-nonterminal CondTerm, CondTermList, NoTernaryCondTerm, NoTernaryCondTermList;
+nonterminal CondTerm, CondTermList;
 
-nonterminal CondFact, CondFactList, NoTernaryCondFact, NoTernaryCondFactList;
+nonterminal CondFact, CondFactList;
 
 nonterminal Expr, ExprList, NoTernaryExpr, HasTernaryExpr;
 
@@ -132,6 +132,12 @@ VarDecl ::= (VarDecl) Type VarDeclElem VarDeclElemList SEMI;
 VarDeclElem ::= (BrackVarDeclElem) IDENT LBRACK RBRACK
 				|
 				(NoBrackVarDeclElem) IDENT
+				|
+				error:l COMMA
+				{: parser.report_error("Izvrsen VarDecl oporavak do , u liniji " + lleft, null); :}
+				|
+				error:l SEMI
+				{: parser.report_error("Izvrsen VarDecl oporavak do ; u liniji " + lleft, null); :}
 				;
 
 VarDeclElemList ::= (HasVarDeclElemList) VarDeclElemList COMMA VarDeclElem
@@ -142,6 +148,12 @@ VarDeclElemList ::= (HasVarDeclElemList) VarDeclElemList COMMA VarDeclElem
 VarDeclList ::= (HasVarDeclList) VarDeclList VarDecl
 				|
 				(NoVarDeclList) /* epsilon */
+				|
+				error:l SEMI
+				{: parser.report_error("Izvrsen VarDeclList oporavak do ; u liniji " + lleft, null); :}
+				|
+				error:l COMMA
+				{: parser.report_error("Izvrsen VarDeclList oporavak do , u liniji " + lleft, null); :}
 				;
 
 
@@ -166,6 +178,9 @@ ClassDecl ::= (ClassDecl) CLASS IDENT ExtendsClassDecl LBRACE VarDeclList Method
 ExtendsClassDecl ::= (HasExtendsClassDecl) EXTENDS Type
 					 |
 					 (NoExtendsClassDecl) /* epsilon */
+					 |
+					 EXTENDS error:l LBRACE
+					 {: parser.report_error("Izvrsen Extends oporavak do } u liniji " + lleft, null); :}
 					 ;
 
 MethodDeclClassDecl ::= (HasMethodDeclClassDecl) LBRACE MethodDeclListClassDecl RBRACE
@@ -223,6 +238,12 @@ FormPars ::= (FormPars) FormParsElem FormParsElemList;
 FormParsElem ::= (BrackFormParsElem) Type IDENT LBRACK RBRACK
 				 |
 				 (NoBrackFormParsElem) Type IDENT
+				 |
+				 error:l COMMA
+				 {: parser.report_error("Izvrsen FormParsElem oporavak do ; u liniji " + lleft, null); :}
+				 |
+				 error:l RPAREN
+				 {: parser.report_error("Izvrsen FromParsElem oporavak do ) u liniji " + lleft, null); :}
 				 ;
 
 FormParsElemList ::= (HasFormParsElem) FormParsElemList COMMA FormParsElem
@@ -232,11 +253,12 @@ FormParsElemList ::= (HasFormParsElem) FormParsElemList COMMA FormParsElem
 
 
 
+
 Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  |
-			  (IfElseStatement) IF LPAREN Condition RPAREN Statement ELSE Statement
+			  (IfElseStatement) IfBlockStart Statement ELSE Statement
 			  |
-			  (IfStatement) IF LPAREN Condition RPAREN Statement
+			  (IfStatement) IfBlockStart Statement
 			  |
 			  (BStatement) BREAK SEMI
 			  |
@@ -258,6 +280,12 @@ Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  |
 			  (SLStatement) LBRACE StatementList RBRACE
 			  ;
+
+IfBlockStart ::= (HasIfBlockStart) IF LPAREN Condition RPAREN
+				 |
+				 (ErrorIfBlockStart) IF LPAREN error:l RPAREN
+				 {: parser.report_error("Izvrsen IfBlock oporavak do ) u liniji " + lleft, null); :}
+				 ;
 
 CaseList ::= (HasCaseList) CaseList CASE NumConst COLON StatementList
 			 |
@@ -292,6 +320,9 @@ DesignatorStatement ::= (AssignopDesignatorStatement) Designator Assignop Expr
 						(PlusPlusDesignatorStatement) Designator PLUSPLUS
 						|
 						(MinusMinusDesignatorStatement) Designator MINUSMINUS
+						|
+						error:l SEMI
+						{: parser.report_error("Izvrsen DesignatorStatement oporavak do ; u liniji " + lleft, null); :}
 						;
 
 

@@ -29,7 +29,7 @@ public class MJParserTest {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/program.mj"); //TODO: set as argv[1]
+			File sourceCode = new File("test/myTest.mj"); //TODO: set as argv[1]
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
@@ -43,13 +43,6 @@ public class MJParserTest {
 			log.info(prog.toString(""));
 			log.info("===================================");
 
-			// ispis prepoznatih programskih konstrukcija
-			RuleVisitor v = new RuleVisitor();
-			prog.traverseBottomUp(v); 
-	      
-			log.info(" Print count calls = " + v.printCallCount);
-
-			log.info(" Deklarisanih promenljivih ima = " + v.varDeclCount);
 			
 		} 
 		finally {
