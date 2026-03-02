@@ -58,7 +58,7 @@ nonterminal VarDecl, VarDeclElem, VarDeclElemList, VarDeclList;
 
 nonterminal EnumDecl, EnumDeclElem, EnumDeclElemList;
 
-nonterminal ClassDecl, ExtendsClassDecl, MethodDeclClassDecl;
+nonterminal ClassDecl, ExtendsClassDecl, MethodDeclClassDecl, MethodDeclListClassDecl;
 
 nonterminal AbstractClassDecl, AbstractMethodDeclAbstractClassDecl;
 
@@ -74,17 +74,17 @@ nonterminal DesignatorStatement;
 
 nonterminal ActPars;
 
-nonterminal Condition;
+nonterminal Condition, NoTernaryCondition;
 
-nonterminal CondTerm, CondTermList;
+nonterminal CondTerm, CondTermList, NoTernaryCondTerm, NoTernaryCondTermList;
 
-nonterminal CondFact, CondFactList;
+nonterminal CondFact, CondFactList, NoTernaryCondFact, NoTernaryCondFactList;
 
-nonterminal Expr, ExprList;
+nonterminal Expr, ExprList, NoTernaryExpr, HasTernaryExpr;
 
 nonterminal Term, TermList;
 
-nonterminal Factor, FactorList, ActParsFactor;
+nonterminal Factor, FactorList, ActParsFactor, ParenExprFactor;
 
 nonterminal Designator, DesignatorElemList, DesignatorElem;
 
@@ -92,7 +92,7 @@ nonterminal Assignop, Relop, Addop, Mulop;
 
 nonterminal Type, NumConst, CharConst, BoolConst;
 
-
+precedence left ELSE ;
 
 Program ::= (Program) PROG IDENT ProgDeclElemList LBRACE MethodDeclList RBRACE;
 
@@ -168,11 +168,15 @@ ExtendsClassDecl ::= (HasExtendsClassDecl) EXTENDS Type
 					 (NoExtendsClassDecl) /* epsilon */
 					 ;
 
-MethodDeclClassDecl ::= (HasMethodDeclClassDecl) LBRACE MethodDeclClassDecl RBRACE
+MethodDeclClassDecl ::= (HasMethodDeclClassDecl) LBRACE MethodDeclListClassDecl RBRACE
 						|
 						(NoMethodDeclClassDecl) /* epsilon */
 						;
 
+MethodDeclListClassDecl ::= (HasMethodDeclListClassDecl) MethodDeclListClassDecl MethodDecl
+							|
+							(NoMethodDeclListClassDecl) /* epsilon */
+							;
 
 
 AbstractClassDecl ::= (AbstractClassDecl) ABSTRACT CLASS IDENT ExtendsClassDecl LBRACE VarDeclList AbstractMethodDeclAbstractClassDecl RBRACE;
@@ -230,7 +234,9 @@ FormParsElemList ::= (HasFormParsElem) FormParsElemList COMMA FormParsElem
 
 Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  |
-			  (IfStatement) IF LPAREN Condition RPAREN Statement ELSE Statement
+			  (IfElseStatement) IF LPAREN Condition RPAREN Statement ELSE Statement
+			  |
+			  (IfStatement) IF LPAREN Condition RPAREN Statement
 			  |
 			  (BStatement) BREAK SEMI
 			  |
@@ -250,7 +256,7 @@ Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  |
 			  (FStatement) ForStatement
 			  |
-			  (StatementList) LBRACE StatementList RBRACE
+			  (SLStatement) LBRACE StatementList RBRACE
 			  ;
 
 CaseList ::= (HasCaseList) CaseList CASE NumConst COLON StatementList
@@ -290,56 +296,60 @@ DesignatorStatement ::= (AssignopDesignatorStatement) Designator Assignop Expr
 
 
 
-ActPars ::= (ActPars) Expr ExprList;
+ActPars ::= (ActPars) ExprList;
 
 
 
-Condition ::= (Condition) CondTerm CondTermList;
+Condition ::= (Condition) CondTermList;
 
 
 
-CondTerm ::= (CondTerm) CondFact CondFactList;
+CondTerm ::= (CondTerm) CondFactList;
 
 CondTermList ::= (HasCondTermList) CondTermList VLINEVLINE CondTerm
 				 |
-				 (NoCondTermList) /* epsilon */
+				 (NoCondTermList) CondTerm
 				 ;
 
 
 
-CondFact ::= (ExprCondFact) Expr Relop Expr
+CondFact ::= (ExprCondFact) NoTernaryExpr Relop NoTernaryExpr
 			 |
-			 (NoExprCondFact) Expr
+			 (NoExprCondFact) NoTernaryExpr
 			 ;
 
 CondFactList ::= (HasCondFactList) CondFactList AMPERAMPER CondFact
 				 |
-				 (NoCondFactList) /* epsilon */
+				 (NoCondFactList) CondFact
 				 ;
 
 
 
-Expr ::= (MinusExpr) MINUS Term TermList
+Expr ::= (NoTExpr) NoTernaryExpr
 		 |
-		 (NoMinusExpr) Term TermList
-		 |
-		 (TernaryFactExpr) CondFact QMARK Expr COLON Expr
-		 |
-		 (TernaryExpr) Condition QMARK Expr COLON Expr
+		 (HasTExpr) HasTernaryExpr
 		 ;
+
+NoTernaryExpr ::= (MinusExpr) MINUS TermList
+				  |
+				  (NoMinusExpr) TermList
+				  ;
+				  
+HasTernaryExpr ::= (TernaryExpr) Condition QMARK NoTernaryExpr COLON Expr;
 
 ExprList ::= (HasExprList) ExprList COMMA Expr
 			 |
-			 (NoExprList) /* epsilon */
+			 (NoExprList) Expr
 			 ;
 
 
-Term ::= (Term) Factor FactorList;
+Term ::= (Term) FactorList;
 
 TermList ::= (HasTermList) Term Addop TermList
 			 |
-			 (NoTermList) /* epsilon */
+			 (NoTermList) Term
 			 ;
+
 
 
 Factor ::= (DesignatorActParsFactor) Designator ActParsFactor
@@ -354,12 +364,15 @@ Factor ::= (DesignatorActParsFactor) Designator ActParsFactor
 		   |
 		   (NewNoExprFactor)NEW Type
 		   |
-		   (ExprFactor) LPAREN Expr RPAREN
+		   (ExprFactor) ParenExprFactor
 		   ;
+
+ParenExprFactor ::= (ParenExprFactor) LPAREN Expr RPAREN;
+
 
 FactorList ::= (HasFactorList) FactorList Mulop Factor
 			   |
-			   (NoFactorList) /* epsilon */
+			   (NoFactorList) Factor
 			   ;
 
 ActParsFactor ::= (ParenNoActParsFactor) LPAREN RPAREN
@@ -403,7 +416,6 @@ Relop ::= (RelopEqualEqual) EQUALEQUAL
 		  |
 		  (RelopLessEqual) LESSEQUAL
 		  ;
-
 
 
 Addop ::= (AddopPlus) PLUS
