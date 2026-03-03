@@ -8,6 +8,7 @@
 				<exclude name="Yylex.java"/>
 				<exclude name="RuleVisitor.java"/>
 				<exclude name="SemanticPass.java"/>
+				<exclude name="TabExtended.java"/>
 			</fileset>
 		</delete>
 		<delete>
@@ -57,7 +58,6 @@
 	        <arg value="spec/mjparser.cup"/>
 	    </java>
 	    
-	    <!-- Show the errors file which contains the conflicts -->
 	    <echo message="Conflicts and errors from CUP generation:"/>
 	    <concat>
 	        <fileset file="logs/cup_errors.txt"/>

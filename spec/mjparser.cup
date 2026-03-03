@@ -6,7 +6,9 @@ import org.apache.log4j.*;
 import rs.ac.bg.etf.pp1.ast.*;
 
 parser code {:
-
+	
+	boolean errorDetected;
+	
 	Logger log = Logger.getLogger(getClass());
    
     // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
@@ -25,6 +27,7 @@ parser code {:
     }
 
     public void report_error(String message, Object info) {
+    	errorDetected = true;
     	StringBuilder msg = new StringBuilder(message); 
     	if (info instanceof Symbol)
             msg.append (" na liniji ").append(((Symbol)info).left);
@@ -34,6 +37,10 @@ parser code {:
 
 :}
 
+
+init with {:
+	errorDetected = false;
+:}
 
 scan with {:
 	Symbol s = this.getScanner().next_token();
@@ -50,7 +57,7 @@ terminal int NUMBER;
 terminal String IDENT;
 terminal char CHARCONST;
 
-nonterminal Program, ProgDeclElemList, ProgDeclElem;
+nonterminal Program, ProgName, ProgDeclElemList, ProgDeclElem;
 
 nonterminal ConstDecl, ConstDeclElem, ConstDeclElemList;
 
@@ -94,7 +101,9 @@ nonterminal Type, NumConst, CharConst, BoolConst;
 
 precedence left ELSE ;
 
-Program ::= (Program) PROG IDENT ProgDeclElemList LBRACE MethodDeclList RBRACE;
+Program ::= (Program) PROG ProgName ProgDeclElemList LBRACE MethodDeclList RBRACE;
+
+ProgName ::= (ProgName) IDENT:name;
 
 ProgDeclElemList ::= (HasProgDeclElemList) ProgDeclElemList ProgDeclElem
 					 |
