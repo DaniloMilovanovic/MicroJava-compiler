@@ -73,7 +73,7 @@ nonterminal MethodDecl, TypeMethodDecl, FormParsMethodDecl, MethodDeclList;
 
 nonterminal AbstractMethodDecl, AbstractMethodDeclList;
 
-nonterminal FormPars, FormParsElem, FormParsElemList;
+nonterminal FormPars, FormParsElem, LastFormParsElem, FormParsElemList;
 
 nonterminal Statement, StatementList, CaseList, ForStatement, DSElemForStatement, CElemForStatement, IfBlockStart;
 
@@ -247,23 +247,27 @@ AbstractMethodDeclList ::= (HasMAbstractMethodDeclList) AbstractMethodDeclList M
 
 
 
+FormPars ::= (FormPars) FormParsElemList;
 
-FormPars ::= (FormPars) FormParsElem FormParsElemList;
-
-FormParsElem ::= (BrackFormParsElem) Type IDENT LBRACK RBRACK
+FormParsElem ::= (BrackFormParsElem) Type IDENT LBRACK RBRACK COMMA
 				 |
-				 (NoBrackFormParsElem) Type IDENT
+				 (NoBrackFormParsElem) Type IDENT COMMA
 				 |
-				 error:l COMMA
-				 {: parser.report_error("Izvrsen FormParsElem oporavak do ; u liniji " + lleft, null); :}
-				 |
-				 error:l RPAREN
-				 {: parser.report_error("Izvrsen FromParsElem oporavak do ) u liniji " + lleft, null); :}
+				 (ErrorFormParsElem)error:l COMMA
+				 {: parser.report_error("Izvrsen FormParsElem oporavak do , u liniji " + lleft, null); :}
 				 ;
 
-FormParsElemList ::= (HasFormParsElem) FormParsElemList COMMA FormParsElem
+LastFormParsElem ::= (BrackLastFormParsElem) Type IDENT LBRACK RBRACK
 					 |
-					 (NoFormParsElem) /* epsilon */
+					 (NoBrackLastFormParsElem) Type IDENT
+					 |
+					 (ErrorLastFormParsElem) error:l
+					 {: parser.report_error("Izvrsen LastFormParsElem oporavak do ) u liniji " + lleft, null); :}
+					 ;
+
+FormParsElemList ::= (HasFormParsElem) FormParsElem FormParsElemList
+					 |
+					 (NoFormParsElem) LastFormParsElem
 					 ;
 
 
