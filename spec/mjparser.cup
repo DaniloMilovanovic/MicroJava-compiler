@@ -61,7 +61,7 @@ nonterminal Program, ProgName, ProgDeclElemList, ProgDeclElem;
 
 nonterminal ConstDecl, ConstDeclElem, ConstDeclElemList;
 
-nonterminal VarDecl, VarDeclElem, VarDeclElemList, VarDeclList;
+nonterminal VarDecl, VarDeclElem, LastVarDeclElem, VarDeclElemList, VarDeclList, Elems;
 
 nonterminal EnumDecl, EnumDeclElem, EnumDeclElemList;
 
@@ -136,22 +136,26 @@ ConstDeclElem ::= (NumConstDeclElem) IDENT EQUAL NumConst
 				  ;
 
 
-VarDecl ::= (VarDecl) Type VarDeclElem VarDeclElemList SEMI;
+VarDecl ::= (HasVarDecl) Type VarDeclElemList;
 
-VarDeclElem ::= (BrackVarDeclElem) IDENT LBRACK RBRACK
+
+VarDeclElem ::= (BrackVarDeclElem) IDENT LBRACK RBRACK COMMA
 				|
-				(NoBrackVarDeclElem) IDENT
+				(NoBrackVarDeclElem) IDENT COMMA
 				|
-				error:l COMMA
-				{: parser.report_error("Izvrsen VarDecl oporavak do , u liniji " + lleft, null); :}
-				|
-				error:l SEMI
-				{: parser.report_error("Izvrsen VarDecl oporavak do ; u liniji " + lleft, null); :}
+				(ErrorVarDeclElem) error COMMA
 				;
 
-VarDeclElemList ::= (HasVarDeclElemList) VarDeclElemList COMMA VarDeclElem
+LastVarDeclElem ::= (HasBrackLastVarDeclElemFirst) IDENT LBRACK RBRACK SEMI
+					 |
+					 (NoBrackLastVarDeclElem) IDENT SEMI
+					 |
+					 (ErrorLastVarDeclElem) error SEMI
+					 ;
+
+VarDeclElemList ::= (HasVarDeclElemList) VarDeclElem VarDeclElemList
 					|
-					(NoVarDeclElemList) /* epsilon */
+					(LastVarDeclElemList) LastVarDeclElem
 					;
 
 VarDeclList ::= (HasVarDeclList) VarDeclList VarDecl
