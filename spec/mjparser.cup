@@ -143,14 +143,16 @@ VarDeclElem ::= (BrackVarDeclElem) IDENT LBRACK RBRACK COMMA
 				|
 				(NoBrackVarDeclElem) IDENT COMMA
 				|
-				(ErrorVarDeclElem) error COMMA
+				(ErrorVarDeclElem) error COMMA:l
+				{: parser.report_error("Izvrsen VarDecl oporavak do , u liniji " + lleft, null); :}
 				;
 
 LastVarDeclElem ::= (HasBrackLastVarDeclElemFirst) IDENT LBRACK RBRACK SEMI
 					 |
 					 (NoBrackLastVarDeclElem) IDENT SEMI
 					 |
-					 (ErrorLastVarDeclElem) error SEMI
+					 (ErrorLastVarDeclElem) error SEMI:l
+					 {: parser.report_error("Izvrsen VarDecl oporavak do ; u liniji " + lleft, null); :}
 					 ;
 
 VarDeclElemList ::= (HasVarDeclElemList) VarDeclElem VarDeclElemList
@@ -334,7 +336,7 @@ DesignatorStatement ::= (AssignopDesignatorStatement) Designator Assignop Expr
 						|
 						(MinusMinusDesignatorStatement) Designator MINUSMINUS
 						|
-						error:l SEMI
+						(ErrorDesignatorStatement)error:l
 						{: parser.report_error("Izvrsen DesignatorStatement oporavak do ; u liniji " + lleft, null); :}
 						;
 
