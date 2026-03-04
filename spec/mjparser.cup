@@ -64,7 +64,8 @@ nonterminal ConstDecl, ConstDeclElem, ConstDeclType, ConstDeclElemList;
 
 nonterminal VarDecl, VarDeclElem, LastVarDeclElem, VarDeclElemList, VarDeclList, Elems;
 
-nonterminal EnumDecl, EnumDeclElem, EnumDeclElemList;
+nonterminal EnumDeclElem, EnumDeclElemList;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj EnumDecl, EnumDeclName;
 
 nonterminal ClassDecl, ExtendsClassDecl, MethodDeclClassDecl, MethodDeclListClassDecl;
 
@@ -185,16 +186,18 @@ VarDeclList ::= (HasVarDeclList) VarDeclList VarDecl
 
 
 
-EnumDecl ::= (EnumDecl) ENUM IDENT LBRACE EnumDeclElem EnumDeclElemList RBRACE;
+EnumDecl ::= (EnumDecl) ENUM EnumDeclName:name LBRACE EnumDeclElem EnumDeclElemList RBRACE;
+
+EnumDeclName ::= (EnumDeclName) IDENT:name;
 
 EnumDeclElemList ::= (HasEnumDeclElemList) EnumDeclElemList COMMA EnumDeclElem
 					 |
 					 (NoEnumDeclElemList) /* epsilon */
 					 ;
 
-EnumDeclElem ::= (NoValEnumDeclElem) IDENT
+EnumDeclElem ::= (NoValEnumDeclElem) IDENT:name
 				 |
-				 (ValEnumDeclElem) IDENT EQUAL NumConst
+				 (ValEnumDeclElem) IDENT:name EQUAL NumConst:num
 				 ;
 
 

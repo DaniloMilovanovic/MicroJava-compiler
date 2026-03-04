@@ -11,6 +11,8 @@ int abcde;
 bool abcde;
 bool ibool;
 
+enum Broj { NULA, JEDAN, JEDAN, PET=5, DESET=10, JEDANAEST=5, DVANAEST=4, TRINAEST}
+
 int niz[];
 {
 	

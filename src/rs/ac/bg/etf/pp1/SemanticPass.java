@@ -1,5 +1,8 @@
 package rs.ac.bg.etf.pp1;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+
 import org.apache.log4j.Logger;
 
 import rs.ac.bg.etf.pp1.ast.*;
@@ -22,9 +25,14 @@ public class SemanticPass extends VisitorAdaptor {
 	boolean errorDetected = false;
 	int nVars;
 	
-	Type currType;
+	Type currType;//Trenutni tip za constDecl i varDecl
+	
+	int currPos = 0; //Trenutni indeks enuma
+	String currEnumName;
+	ArrayList<Integer> enumElems = new ArrayList<>();
 	
 	Logger log = Logger.getLogger(getClass());
+	
 	private Obj obj;
 	
 	//pomocne funkcije
@@ -45,7 +53,14 @@ public class SemanticPass extends VisitorAdaptor {
 		return elem == null;
 	}
 
-	
+	private boolean containsEnumConstant(int num) {
+		for(int el: enumElems) {
+			if(el == num) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	public void report_error(String message, SyntaxNode info) {
 		errorDetected = true;
@@ -164,6 +179,7 @@ public class SemanticPass extends VisitorAdaptor {
 	}
 	
 	//ConstDecl obrada
+	
 	public void visit (ConstDeclType cDeclType) {
 		currType = cDeclType.getType();
 	}
@@ -237,6 +253,57 @@ public class SemanticPass extends VisitorAdaptor {
 		}
 		else {// Konstanta je vec deklarisana
 			report_error("Konstanta " + cDecl.getName() + " je vec deklarisana. Greska", cDecl);
+		}
+	}
+	
+	//Enum obrada
+	
+	public void visit(EnumDeclName eDeclName) {
+		currPos = 0;
+		currEnumName = eDeclName.getName();
+		enumElems.clear();
+		report_info("Zapoceta je obrada enum-a: " + eDeclName.getName() + ". Info", eDeclName);
+	}
+	
+	public void visit(EnumDecl eDecl) {
+		report_info("Zavrsena je obrada enum-a: " + eDecl.getEnumDeclName().getName() + ". Info", eDecl);
+	}
+	
+	public void visit(NoValEnumDeclElem eDeclElem) {
+		if(!containsEnumConstant(currPos)) {// Konstanta sa istim brojem nije deklarisana
+
+			if(checkVarNameConstraints(currEnumName + "." + eDeclElem.getName())){// Konstanta ne sme vise puta biti deklarisana u okviru istog enuma.
+				Obj obj = TabExtended.insert(Obj.Con, currEnumName + "." + eDeclElem.getName(), TabExtended.intType);
+				obj.setAdr(currPos);
+				enumElems.add(currPos);
+				currPos++;
+			}
+			else {// Konstanta je vec deklarisana
+				report_error("Konstanta tipa enum " + currEnumName + "." + eDeclElem.getName() + " je vec deklarisana. Greska", eDeclElem);
+			}
+		}
+		else {// Konstanta sa istim brojem je prethodno deklarisana
+			report_error("Konstanta tipa enum sa vrednoscu " + currPos + " je vec deklarisana. Greska", eDeclElem);
+		}
+	}
+	
+	public void visit(ValEnumDeclElem eDeclElem) {// Konstanta je uvek broj po definiciji leksera
+		currPos = eDeclElem.getNumConst().getVal();
+		if(!containsEnumConstant(currPos)) {// Konstanta sa istim brojem nije deklarisana
+
+			if(checkVarNameConstraints(currEnumName + "." + eDeclElem.getName())){// Konstanta ne sme vise puta biti deklarisana u okviru istog enuma.
+				
+				Obj obj = TabExtended.insert(Obj.Con, currEnumName + "." + eDeclElem.getName(), TabExtended.intType);
+				obj.setAdr(eDeclElem.getNumConst().getVal());
+				enumElems.add(currPos);
+				currPos++;
+			}
+			else {// Konstanta je vec deklarisana
+				report_error("Konstanta tipa enum " + currEnumName + "." + eDeclElem.getName() + " je vec deklarisana. Greska", eDeclElem);
+			}
+		}
+		else {// Konstanta sa istim brojem je prethodno deklarisana
+			report_error("Konstanta tipa enum sa vrednoscu " + currPos + " je vec deklarisana. Greska", eDeclElem);
 		}
 	}
 	
