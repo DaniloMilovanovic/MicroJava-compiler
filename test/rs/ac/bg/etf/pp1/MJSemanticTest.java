@@ -29,17 +29,19 @@ public class MJSemanticTest {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/test303.mj");
+			File sourceCode = new File("test/testSemantic.mj");
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
 			Yylex lexer = new Yylex(br);
 			
+
+	        TabExtended.init();
+	        
 			MJParser p = new MJParser(lexer);
 	        Symbol s = p.parse();  //pocetak parsiranja
 	        
 	        Program prog = (Program)(s.value); 
-	        TabExtended.init();
 			// ispis sintaksnog stabla
 			log.info(prog.toString(""));
 			log.info("===================================");

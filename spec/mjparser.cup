@@ -57,9 +57,10 @@ terminal int NUMBER;
 terminal String IDENT;
 terminal char CHARCONST;
 
-nonterminal Program, ProgName, ProgDeclElemList, ProgDeclElem;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ProgName, Program;
+nonterminal ProgDeclElemList, ProgDeclElem;
 
-nonterminal ConstDecl, ConstDeclElem, ConstDeclElemList;
+nonterminal ConstDecl, ConstDeclElem, ConstDeclType, ConstDeclElemList;
 
 nonterminal VarDecl, VarDeclElem, LastVarDeclElem, VarDeclElemList, VarDeclList, Elems;
 
@@ -97,9 +98,17 @@ nonterminal Designator, DesignatorElemList, DesignatorElem;
 
 nonterminal Assignop, Relop, Addop, Mulop;
 
-nonterminal Type, NumConst, CharConst, BoolConst;
+nonterminal NumConst, CharConst, BoolConst;
 
-precedence left ELSE ;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, VarDeclType;
+
+precedence left ELSE;
+
+
+
+
+
+
 
 Program ::= (Program) PROG ProgName ProgDeclElemList LBRACE MethodDeclList RBRACE;
 
@@ -121,35 +130,38 @@ ProgDeclElem ::= (ConstProgDeclElem) ConstDecl
 				 (AbstractClassProgDeclElem) AbstractClassDecl
 				 ;
 
-ConstDecl ::= (ConstDecl) CONST Type ConstDeclElem ConstDeclElemList SEMI;
+ConstDecl ::= (ConstDecl) CONST ConstDeclType:type ConstDeclElem ConstDeclElemList SEMI;
+
+ConstDeclType ::= (ConstDeclType) Type:type;
 
 ConstDeclElemList ::= (HasConstDeclElemList) ConstDeclElemList COMMA ConstDeclElem
 					  |
 					  (NoConstDeclElemList) /* epsilon */
 					  ;
 
-ConstDeclElem ::= (NumConstDeclElem) IDENT EQUAL NumConst
+ConstDeclElem ::= (NumConstDeclElem) IDENT:name EQUAL NumConst:numConst
 				  |
-				  (CharConstDeclElem) IDENT EQUAL CharConst
+				  (CharConstDeclElem) IDENT:name EQUAL CharConst:charConst
 				  |
-				  (BoolConstDeclElem) IDENT EQUAL BoolConst
+				  (BoolConstDeclElem) IDENT:name EQUAL BoolConst:boolConst
 				  ;
 
 
-VarDecl ::= (HasVarDecl) Type VarDeclElemList;
+VarDecl ::= (HasVarDecl) VarDeclType:t VarDeclElemList:vdel;
 
+VarDeclType ::= (VarDeclType) Type;
 
-VarDeclElem ::= (BrackVarDeclElem) IDENT LBRACK RBRACK COMMA
+VarDeclElem ::= (BrackVarDeclElem) IDENT:name LBRACK RBRACK COMMA
 				|
-				(NoBrackVarDeclElem) IDENT COMMA
+				(NoBrackVarDeclElem) IDENT:name COMMA
 				|
 				(ErrorVarDeclElem) error COMMA:l
 				{: parser.report_error("Izvrsen VarDecl oporavak do , u liniji " + lleft, null); :}
 				;
 
-LastVarDeclElem ::= (HasBrackLastVarDeclElemFirst) IDENT LBRACK RBRACK SEMI
+LastVarDeclElem ::= (BrackLastVarDeclElem) IDENT:name LBRACK RBRACK SEMI
 					 |
-					 (NoBrackLastVarDeclElem) IDENT SEMI
+					 (NoBrackLastVarDeclElem) IDENT:name SEMI
 					 |
 					 (ErrorLastVarDeclElem) error SEMI:l
 					 {: parser.report_error("Izvrsen VarDecl oporavak do ; u liniji " + lleft, null); :}
@@ -484,18 +496,18 @@ Mulop ::= (MulopStar) STAR
 
 
 
-Type ::= (Type) IDENT;
+Type ::= (Type) IDENT:typeName;
 
 
-NumConst ::= (NumConst) NUMBER;
+NumConst ::= (NumConst) NUMBER:val;
 
 
-CharConst ::= (CharConst) CHARCONST;
+CharConst ::= (CharConst) CHARCONST:val;
 
 
-BoolConst ::= (TrueBoolConst) TRUE
+BoolConst ::= (TrueBoolConst) TRUE:val
 			  |
-			  (FalseBoolConst) FALSE
+			  (FalseBoolConst) FALSE:val
 			  ;
 			  
 			  

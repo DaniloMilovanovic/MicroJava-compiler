@@ -17,4 +17,14 @@ public class TabExtended extends Tab {
 		currentScope.addToLocals(new Obj(Obj.Type, "bool", boolType));
 	}
 	
+	
+	public static void dump() {
+        DumpSymbolTableVisitorExtended stv = new DumpSymbolTableVisitorExtended();
+        System.out.println("=====================SYMBOL TABLE DUMP=========================");
+        for (Scope s = currentScope; s != null; s = s.getOuter()) {
+            s.accept(stv);
+        }
+        System.out.println(stv.getOutput());
+    }
+	
 }
