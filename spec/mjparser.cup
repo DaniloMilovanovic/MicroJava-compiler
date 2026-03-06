@@ -71,7 +71,8 @@ nonterminal ClassDecl, ExtendsClassDecl, MethodDeclClassDecl, MethodDeclListClas
 
 nonterminal AbstractClassDecl, AbstractMethodDeclAbstractClassDecl;
 
-nonterminal MethodDecl, TypeMethodDecl, FormParsMethodDecl, MethodDeclList;
+nonterminal MethodDecl, FormParsMethodDecl, MethodDeclList;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj TypeMethodDecl;
 
 nonterminal AbstractMethodDecl, AbstractMethodDeclList;
 
@@ -89,13 +90,14 @@ nonterminal CondTerm, CondTermList;
 
 nonterminal CondFact, CondFactList;
 
-nonterminal Expr, ExprList, NoTernaryExpr, HasTernaryExpr;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, ExprList, NoTernaryExpr, HasTernaryExpr;
 
 nonterminal Term, TermList;
 
 nonterminal Factor, FactorList, ActParsFactor, ParenExprFactor;
 
-nonterminal Designator, DesignatorElemList, DesignatorElem;
+nonterminal DesignatorName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem;
 
 nonterminal Assignop, Relop, Addop, Mulop;
 
@@ -232,12 +234,13 @@ AbstractMethodDeclAbstractClassDecl ::= (HasAMDAbstractClassDecl) LBRACE Abstrac
 										 ;
 
 
-MethodDecl ::= (MethodDecl) TypeMethodDecl IDENT LPAREN FormParsMethodDecl RPAREN VarDeclList LBRACE StatementList RBRACE;
+MethodDecl ::= (MethodDecl) TypeMethodDecl LPAREN FormParsMethodDecl RPAREN VarDeclList LBRACE StatementList RBRACE;
 
-TypeMethodDecl ::= (TMethodDecl) Type
+TypeMethodDecl ::= (TMethodDecl) Type IDENT:name
 				   |
-				   (VMethodDecl) VOID
+				   (VMethodDecl) VOID IDENT:name
 				   ;
+				   
 
 FormParsMethodDecl ::= (HasFormParsMethodDecl) FormPars
 					   |
@@ -264,17 +267,17 @@ AbstractMethodDeclList ::= (HasMAbstractMethodDeclList) AbstractMethodDeclList M
 
 FormPars ::= (FormPars) FormParsElemList;
 
-FormParsElem ::= (BrackFormParsElem) Type IDENT LBRACK RBRACK COMMA
+FormParsElem ::= (BrackFormParsElem) Type IDENT:name LBRACK RBRACK COMMA
 				 |
-				 (NoBrackFormParsElem) Type IDENT COMMA
+				 (NoBrackFormParsElem) Type IDENT:name COMMA
 				 |
 				 (ErrorFormParsElem)error:l COMMA
 				 {: parser.report_error("Izvrsen FormParsElem oporavak do , u liniji " + lleft, null); :}
 				 ;
 
-LastFormParsElem ::= (BrackLastFormParsElem) Type IDENT LBRACK RBRACK
+LastFormParsElem ::= (BrackLastFormParsElem) Type IDENT:name LBRACK RBRACK
 					 |
-					 (NoBrackLastFormParsElem) Type IDENT
+					 (NoBrackLastFormParsElem) Type IDENT:name
 					 |
 					 (ErrorLastFormParsElem) error:l
 					 {: parser.report_error("Izvrsen LastFormParsElem oporavak do ) u liniji " + lleft, null); :}
@@ -447,21 +450,14 @@ ActParsFactor ::= (ParenNoActParsFactor) LPAREN RPAREN
 				  (NoParenNoActParsFactor) /* epsilon */
 				  ;
 
-Designator ::= (Designator) IDENT DesignatorElemList;
-
-
-DesignatorElemList::= (HasDesignatorElem) DesignatorElemList DesignatorElem
-					  |
-					  (NoDesignatorElem) /* epsilon */
-					  ;
-				  
-
-DesignatorElem ::= (DotIdentDesignatorElem) PERIOD IDENT
-				   |
-				   (DotLengthDesignatorElem) PERIOD LEN
-				   |
-				   (ExprDesignatorElem) LBRACK Expr RBRACK
-				   ;
+Designator ::= (BaseDesignator) IDENT:baseName
+			   |
+			   (EnumDesignator) IDENT:baseName PERIOD IDENT:scopeName
+			   |
+			   (LengthDesignator) IDENT:baseName PERIOD LEN
+			   |
+			   (ArrayDesignator) IDENT:baseName LBRACK Expr RBRACK
+			   ;
 
  
 

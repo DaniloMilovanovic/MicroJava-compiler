@@ -10,6 +10,7 @@ asdasf i;
 int abcde;
 bool abcde;
 bool ibool;
+int prom123;
 
 enum Broj { NULA, JEDAN, JEDAN, PET=5, DESET=10, JEDANAEST=5, DVANAEST=4, TRINAEST}
 
@@ -21,7 +22,7 @@ int niz[];
 		return z + d;
 	}
 	
-	int inkrement(int a, int inc) int pom; 
+	int inkrement(int a[], bool a, int inc) int pom; int pomAbcd; 
 	{
 		if(inc == jedan) pom = 1;
 		else if(inc == 2) pom = a;
@@ -30,11 +31,25 @@ int niz[];
 	}
 	
 	bool verify() {
+		prom123 = Broj.Jedan;
+		prom123 = Broj.PET;
+		prom123 = leeeeleeee.JEDAN;
+		prom123 = lelelele;
+		prom123 = abcde;
+		prom123 = luuuuuuu;
+		prom123 = abcde[6];
+		prom123 = niz[5];
+		prom123 = niz[ibool];
+		prom123 = liiiiii[5];
+		prom123 = niz.length;
+		prom123 = abcde.length;
+		prom123 = leeeee.length;
+		
 		print('v');
 		return false;
 	}	
 	
-	void main()
+	void main() int d;
 	{
 		if(1!=1) print(-6);
 		else print(0);  
