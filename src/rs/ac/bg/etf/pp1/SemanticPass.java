@@ -359,65 +359,158 @@ public class SemanticPass extends VisitorAdaptor {
 	//FromPars obrada
 	
 	public void visit(NoBrackFormParsElem fPars) {
-		if(checkCurrentScope(fPars.getName())) {//Simbol nije deklarisan u trenutnom opsegu
+		if(checkCurrentScope(fPars.getName())) {// Simbol nije deklarisan u trenutnom opsegu
 			Obj formPar = TabExtended.insert(Obj.Var, fPars.getName(), fPars.getType().struct);
 			report_info("Deklarisan formalni parametar: " + fPars.getName() + ". Info", fPars);
 			formPar.setAdr(formalParsCount);
 			formalParsCount++;
 		}
-		else {//Simbol je vec deklarisan u trenutnom opsegu
+		else {// Simbol je vec deklarisan u trenutnom opsegu
 			report_error("Formalni parametar " + fPars.getName() + " je vec deklarisana. Greska", fPars);
 		}
 	}
 	
 	public void visit(NoBrackLastFormParsElem fPars) {
-		if(checkCurrentScope(fPars.getName())) {//Simbol nije deklarisan u trenutnom opsegu
+		if(checkCurrentScope(fPars.getName())) {// Simbol nije deklarisan u trenutnom opsegu
 			Obj formPar = TabExtended.insert(Obj.Var, fPars.getName(), fPars.getType().struct);
 			report_info("Deklarisan formalni parametar: " + fPars.getName() + ". Info", fPars);
 			formPar.setAdr(formalParsCount);
 			formalParsCount++;
 		}
-		else {//Simbol je vec deklarisan u trenutnom opsegu
+		else {// Simbol je vec deklarisan u trenutnom opsegu
 			report_error("Formalni parametar " + fPars.getName() + " je vec deklarisana. Greska", fPars);
 		}
 	}
 	
 	public void visit(BrackFormParsElem fPars) {
-		if(checkCurrentScope(fPars.getName())) {//Simbol nije deklarisan u trenutnom opsegu
+		if(checkCurrentScope(fPars.getName())) {// Simbol nije deklarisan u trenutnom opsegu
 			Struct arrayType = getArrayStruct(fPars.getType().struct);
-			if(arrayType == Tab.noType) {//Ne postoji struktura niza za nas tip, verovatno nepotrebna provera
+			if(arrayType == Tab.noType) {// Ne postoji struktura niza za nas tip, verovatno nepotrebna provera
 				report_error("Nije pronadjen tip niza " + fPars.getType().getTypeName() + " u tabeli simbola! Greska", null);
 				
 			}
-			else {//Postoji struktura niza za nas tip
+			else {// Postoji struktura niza za nas tip
 				Obj formPar = TabExtended.insert(Obj.Var, fPars.getName(), arrayType);
 				report_info("Deklarisana formalni parametar: " + fPars.getName() + ". Info", fPars);
 				formPar.setAdr(formalParsCount);
 				formalParsCount++;
 			}
 		}
-		else {//Simbol je vec deklarisan u trenutnom opsegu
+		else {// Simbol je vec deklarisan u trenutnom opsegu
 			report_error("Formalni parametar " + fPars.getName() + " je vec deklarisana. Greska", fPars);
 		}
 	}
 	public void visit(BrackLastFormParsElem fPars) {
-		if(checkCurrentScope(fPars.getName())) {//Simbol nije deklarisan u trenutnom opsegu
+		if(checkCurrentScope(fPars.getName())) {// Simbol nije deklarisan u trenutnom opsegu
 			Struct arrayType = getArrayStruct(fPars.getType().struct);
-			if(arrayType == Tab.noType) {//Ne postoji struktura niza za nas tip, verovatno nepotrebna provera
+			if(arrayType == Tab.noType) {// Ne postoji struktura niza za nas tip, verovatno nepotrebna provera
 				report_error("Nije pronadjen tip niza " + fPars.getType().getTypeName() + " u tabeli simbola! Greska", null);
 				
 			}
-			else {//Postoji struktura niza za nas tip
+			else {// Postoji struktura niza za nas tip
 				Obj formPar = TabExtended.insert(Obj.Var, fPars.getName(), arrayType);
 				report_info("Deklarisana formalni parametar: " + fPars.getName() + ". Info", fPars);
 				formPar.setAdr(formalParsCount);
 				formalParsCount++;
 			}
 		}
-		else {//Simbol je vec deklarisan u trenutnom opsegu
+		else {// Simbol je vec deklarisan u trenutnom opsegu
 			report_error("Formalni parametar " + fPars.getName() + " je vec deklarisana. Greska", fPars);
 		}
 	}
+	
+	//DesignatorStatement obrada
+	
+	public void visit(AssignopDesignatorStatement des) {
+		Obj obj = des.getDesignatorStatementName().getDesignator().obj;
+		if(obj.getKind() == Obj.Var || obj.getKind() == Obj.Fld || obj.getKind() == Obj.Elem) {
+			if(des.getExpr().struct.assignableTo(obj.getType())) {
+				des.struct = obj.getType();
+			}
+			else {
+				des.struct = TabExtended.noType;
+				report_error("Expr nije kompatibilan pri dodeli sa tipom neterminala Designator. Greska", des);
+			}
+		}
+		else {
+			des.struct = TabExtended.noType;
+			report_error("Designator ne oznacava promenljivu, element niza ili polje unutar objekta. Greska", des);
+		}
+	}
+	
+	public void visit(PlusPlusDesignatorStatement des) {
+		Obj obj = des.getDesignatorStatementName().getDesignator().obj;
+		if(obj.getKind() == Obj.Var || obj.getKind() == Obj.Fld || obj.getKind() == Obj.Elem) {
+			if(obj.getType() == TabExtended.intType) {
+				des.struct = obj.getType();
+			}
+			else {
+				des.struct = TabExtended.noType;
+				report_error("Designator nije tipa int. Greska", des);
+			}
+		}
+		else {
+			des.struct = TabExtended.noType;
+			report_error("Designator ne oznacava promenljivu, element niza ili polje unutar objekta. Greska", des);
+		}
+	}
+	
+	public void visit(MinusMinusDesignatorStatement des) {
+		Obj obj = des.getDesignatorStatementName().getDesignator().obj;
+		if(obj.getKind() == Obj.Var || obj.getKind() == Obj.Fld || obj.getKind() == Obj.Elem) {
+			if(obj.getType() == TabExtended.intType) {
+				des.struct = obj.getType();
+			}
+			else {
+				des.struct = TabExtended.noType;
+				report_error("Designator nije tipa int. Greska", des);
+			}
+		}
+		else {
+			des.struct = TabExtended.noType;
+			report_error("Designator ne oznacava promenljivu, element niza ili polje unutar objekta. Greska", des);
+		}
+	}
+	
+	public void visit(NoActParsDesignatorStatement des) {
+		Obj obj = des.getDesignatorStatementName().getDesignator().obj;
+		if(obj.getKind() != Obj.Meth) {// Provera da li je metoda 
+			report_error("Designator " + obj.getName() + " nije funkcija. Greska", des);
+			des.struct = TabExtended.noType;
+		}
+		else if(obj.getLevel() != 0) {// Provera da li je metoda globalna
+			report_error("Designator " + obj.getName() + " nije globalna funkcija. Greska", des);
+			des.struct = TabExtended.noType;
+		}
+		else if(obj.getLevel() != 0) {
+			report_error("Broj formalnih parametara funkcije je veci od 0 ali nije prosledjen nijedan parametar. Greska", des);
+			des.struct = TabExtended.noType;
+		}
+		else {
+			des.struct = obj.getType();
+		}
+	}
+	
+	public void visit(ActParsDesignatorStatement des) {
+		Obj obj = des.getDesignatorStatementName().getDesignator().obj;
+		if(obj.getKind() != Obj.Meth) {// Provera da li je metoda 
+			report_error("Designator " + obj.getName() + " nije funkcija. Greska", des);
+			des.struct = TabExtended.noType;
+		}
+		else if(obj.getLevel() != 0) {// Provera da li je metoda globalna
+			report_error("Designator " + obj.getName() + " nije globalna funkcija. Greska", des);
+			des.struct = TabExtended.noType;
+		}
+		else {
+			des.struct = obj.getType();
+		}
+	}
+	
+	public void visit(DesignatorStatementName name) {
+		currentMethod = name.getDesignator().obj;
+	}
+	
+	//Designator obrada
 	
 	public void visit(BaseDesignator des) {
 		des.obj = TabExtended.find(des.getBaseName());
@@ -425,51 +518,215 @@ public class SemanticPass extends VisitorAdaptor {
 			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
 		}
 	}
-	
-	//Designator obrada
 
 	public void visit(EnumDesignator des) {
 		String name = des.getBaseName() + "." + des.getScopeName();
 		des.obj = TabExtended.find(name);
-		if(des.obj == TabExtended.noObj) {
+		if(des.obj == TabExtended.noObj) {// Provera da li postoji designator u tabeli simbola
 			report_error("Designator " + name  + " nije deklarisan. Greska", des);
 		}
-		else if(des.obj.getKind() != Obj.Con) {
+		else if(des.obj.getKind() != Obj.Con) {// Provera da li postoji designator konstanta
 			report_error("Designator " + des.obj.getName()  + " nije konstanta nabrajanja. Greska", des);
 		}
 	}
 	
 	public void visit(LengthDesignator des) {
 		des.obj = TabExtended.find(des.getBaseName());
-		if(des.obj == TabExtended.noObj) {
+		if(des.obj == TabExtended.noObj) {// Provera da li postoji designator u tabeli simbola
 			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
 		}
-		else if(des.obj.getType().getKind() != Struct.Array) {
+		else if(des.obj.getType().getKind() != Struct.Array) {// Provera da li je simbol niz
 			report_error("Designator " + des.obj.getName()  + " nije niz. Greska", des);
 		}
+		des.obj = new Obj(Obj.Con, des.getBaseName(), TabExtended.intType);
 	}
 	
 	public void visit(ArrayDesignator des) {
 		Obj obj = TabExtended.find(des.getBaseName());
-		if(obj == TabExtended.noObj) {
+		if(obj == TabExtended.noObj) {// Provera da li postoji designator u tabeli simbola
 			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
 		} 
-		else if(obj.getType().getKind() != Struct.Array) {
+		else if(obj.getType().getKind() != Struct.Array) {// Provera da li je simbol niz
 			report_error("Designator " + obj.getName()  + " nije niz. Greska", des);
 		}
-		else if (des.getExpr().struct != TabExtended.intType) {
+		else if (des.getExpr().struct != TabExtended.intType) {// Izraz nije int
 			report_error("Izraz u okviru [] nije tipa int. Greska", des);
 		}
 		else {
-			des.obj = new Obj(Obj.Var, des.getBaseName(), obj.getType().getElemType());
-			System.out.println(des.obj.getKind());
-			System.out.println(des.obj.getType().getKind());
-		}
+			des.obj = new Obj(Obj.Elem, des.getBaseName(), obj.getType().getElemType()); //Element tipa Elem, isto ime kao niz, struct je tip niza
+		}//TODO dodatno proveri jel treba da se postavi u addr mozda pozicija u okviru niza
 		
 	}
+	
+	//Factor obrada
+	
+	public void visit(NumFactor fact) {
+		fact.struct = TabExtended.intType;
+	}
+	
+	public void visit(CharFactor fact) {
+		fact.struct = TabExtended.charType;
+	}
+	
+	public void visit(BoolFactor fact) {
+		fact.struct = TabExtended.boolType;
+	}
+	
+	public void visit(ExprFactor fact) {
+		fact.struct = fact.getExpr().struct;
+	}
+	
+	public void visit(DesignatorFactor fact) {
+		fact.struct = fact.getFactorName().getDesignator().obj.getType();
+	}
+	
+	
+	public void visit(EmptyFuncCallFactor fact) {
+		Obj obj = fact.getFactorName().getDesignator().obj;
+		if(obj.getKind() != Obj.Meth) {// Provera da li je metoda 
+			report_error("Designator " + obj.getName() + " nije funkcija. Greska", fact);
+			fact.struct = TabExtended.noType;
+		}
+		else if(fact.getFactorName().getDesignator().obj.getLevel() != 0) {// Provera da li je metoda globalna
+			report_error("Designator " + obj.getName() + " nije globalna funkcija. Greska", fact);
+			fact.struct = TabExtended.noType;
+		}
+		else if(obj.getLevel() != 0) {
+			report_error("Broj formalnih parametara funkcije je veci od 0 ali nije prosledjen nijedan parametar. Greska", fact);
+			fact.struct = TabExtended.noType;
+		}
+		else {
+			obj.getType();
+		}
+	}
+	
+	// Provera da li su prosledjeni parametri kompatibilni sa param funkcije se vrsi u ActPars koji se proverava nakon designator
+	public void visit(NonEmptyFuncCallFactor fact) {
+		//TODO check params
+		Obj obj = fact.getFactorName().getDesignator().obj;
+		if(obj.getKind() != Obj.Meth) {// Provera da li je metoda 
+			report_error("Designator " + obj.getName() + " nije funkcija. Greska", fact);
+			fact.struct = TabExtended.noType;
+		}
+		else if(obj.getLevel() != 0) {// Provera da li je metoda globalna
+			report_error("Designator " + obj.getName() + " nije globalna funkcija. Greska", fact);
+			fact.struct = TabExtended.noType;
+		}
+		else {
+			fact.struct = obj.getType();
+		}
+	}
+	
+	public void visit(NewArrayFactor fact) {
+		if(fact.getExpr().struct != TabExtended.intType) {//Provera da li je expr tipa int
+			report_error("Izraz Expr nije integer. Greska", fact);
+			fact.struct = TabExtended.noType;
+		}
+		else {//Ovde proveravamo i da li imamo tip
+			switch(fact.getType().struct.getKind()) {
+			case Struct.Int:
+				fact.struct = TabExtended.intArrayType;
+				break;
+			case Struct.Char:
+				fact.struct = TabExtended.charArrayType;
+				break;
+			case Struct.Bool:
+				fact.struct = TabExtended.boolArrayType;
+				break;
+			default:
+				fact.struct = TabExtended.noType;
+			}
+		}
+	}
+	
+	public void visit(FactorName name) {
+		currentMethod = name.getDesignator().obj;
+	}
+	
+	//Term obrada
+	
+	public void visit(MiddleTerm term) {
+		
+		if(term.getTerm().struct != TabExtended.intType) {
+			report_error("Term nije tipa int. Greska", term);
+		}
+		else if(term.getFactor().struct != TabExtended.intType) {
+			report_error("Factor nije tipa int. Greska", term);
+		}
+		else {
+			term.struct = term.getTerm().struct;
+		}
+	}
+	
+	public void visit(LastTerm term) {// Provera za expr
+		// Ne treba proveravati term da li je int jer 
+		term.struct = term.getFactor().struct;
+	}
+	
+	public void visit(HasTermList termList) {// Provera za expr
+
+		if(termList.getTerm().struct != TabExtended.intType) {
+			report_error("Term nije tipa int. Greska", termList);
+		}
+		else if(termList.getTermList().struct != TabExtended.intType) {
+			report_error("TermList nije tipa int. Greska", termList);
+		}
+		else {
+			termList.struct = termList.getTerm().struct;
+		}
+	}
+	
+	public void visit(NoTermList termList) {
+		termList.struct = termList.getTerm().struct;
+	}
+	
+	//Expr obrada
+	
+	public void visit(NoTExpr expr) {// Ovo je Expr
+		expr.struct = expr.getNoTernaryExpr().struct;
+	}
+	
+	public void visit(HasTExpr expr) {// Ovo je Expr
+		expr.struct = expr.getHasTernaryExpr().struct;
+	}
+	
+	public void visit(MinusExpr expr) {
+		if(expr.getTermList().struct != TabExtended.intType) {
+			expr.struct = TabExtended.noType;
+			report_error("TermList nije tipa int. Greska", expr);
+		}
+		else {
+			expr.struct = expr.getTermList().struct;	
+		}
+	}
+	
+	public void visit(NoMinusExpr expr) {
+		expr.struct = expr.getTermList().struct;
+	}
+	
+	public void visit(TernaryExpr expr) {
+		
+		if(expr.getNoTernaryExpr().struct.equals(expr.getExpr().struct)){
+			if(expr.getCondition().struct == TabExtended.boolType) {
+				expr.struct = expr.getNoTernaryExpr().struct;
+			}
+			else {
+				expr.struct = TabExtended.noType;
+				report_error("Condition nije tipa bool. Greska", expr);
+			}
+		}
+		else {
+			expr.struct = TabExtended.noType;
+			report_error("Prvi i drugi Expr ternarnog upita nisu istog tipa. Greska", expr);
+		}
+	}
+	
+	//TODO condition i svi nizi delovi moraju da provere jel su bool
 	
     public boolean passed() {
     	return !errorDetected;
     }
+    
+    //TODO testiraj Factor, Term, expr, DesignatorStatement i ActPars
     
 }

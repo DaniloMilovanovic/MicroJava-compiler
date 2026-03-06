@@ -80,21 +80,23 @@ nonterminal FormPars, FormParsElem, LastFormParsElem, FormParsElemList;
 
 nonterminal Statement, StatementList, CaseList, ForStatement, DSElemForStatement, CElemForStatement, IfBlockStart;
 
-nonterminal DesignatorStatement;
+nonterminal DesignatorStatementName;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct DesignatorStatement;
 
 nonterminal ActPars;
 
-nonterminal Condition;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition;
 
-nonterminal CondTerm, CondTermList;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct CondTerm, CondTermList;
 
-nonterminal CondFact, CondFactList;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct CondFact, CondFactList;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, ExprList, NoTernaryExpr, HasTernaryExpr;
 
-nonterminal Term, TermList;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Term, TermList;
 
-nonterminal Factor, FactorList, ActParsFactor, ParenExprFactor;
+nonterminal FactorList;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Factor, ActParsFactor,  FactorName;
 
 nonterminal DesignatorName;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem;
@@ -348,21 +350,21 @@ StatementList ::= (HasStatementList) StatementList Statement
 
 
 
-DesignatorStatement ::= (AssignopDesignatorStatement) Designator Assignop Expr
+DesignatorStatement ::= (AssignopDesignatorStatement) DesignatorStatementName Assignop Expr
 						|
-						(ActParsDesignatorStatement) Designator LPAREN ActPars RPAREN
+						(ActParsDesignatorStatement) DesignatorStatementName LPAREN ActPars RPAREN
 						|
-						(NoActParsDesignatorStatement) Designator LPAREN RPAREN
+						(NoActParsDesignatorStatement) DesignatorStatementName LPAREN RPAREN
 						|
-						(PlusPlusDesignatorStatement) Designator PLUSPLUS
+						(PlusPlusDesignatorStatement) DesignatorStatementName PLUSPLUS
 						|
-						(MinusMinusDesignatorStatement) Designator MINUSMINUS
+						(MinusMinusDesignatorStatement) DesignatorStatementName MINUSMINUS
 						|
 						(ErrorDesignatorStatement)error:l
 						{: parser.report_error("Izvrsen DesignatorStatement oporavak do ; u liniji " + lleft, null); :}
 						;
 
-
+DesignatorStatementName ::= (DesignatorStatementName) Designator;
 
 ActPars ::= (ActPars) ExprList;
 
@@ -411,16 +413,22 @@ ExprList ::= (HasExprList) ExprList COMMA Expr
 			 ;
 
 
-Term ::= (Term) FactorList;
+Term ::= (MiddleTerm) Term:t Mulop Factor:f
+		 |
+		 (LastTerm) Factor:f
+		 ;
 
-TermList ::= (HasTermList) Term Addop TermList
+TermList ::= (HasTermList) TermList Addop Term
 			 |
 			 (NoTermList) Term
 			 ;
 
 
-
-Factor ::= (DesignatorActParsFactor) Designator ActParsFactor
+Factor ::= (DesignatorFactor) FactorName
+		   |
+		   (NonEmptyFuncCallFactor) FactorName LPAREN ActPars RPAREN
+		   |
+		   (EmptyFuncCallFactor) FactorName LPAREN RPAREN
 		   |
 		   (NumFactor) NumConst
 		   |
@@ -428,27 +436,15 @@ Factor ::= (DesignatorActParsFactor) Designator ActParsFactor
 		   |
 		   (BoolFactor) BoolConst
 		   |
-		   (NewExprFactor)NEW Type LBRACK Expr RBRACK 
+		   (NewArrayFactor)NEW Type LBRACK Expr RBRACK 
 		   |
-		   (NewNoExprFactor)NEW Type
+		   (NewClassFactor)NEW Type
 		   |
-		   (ExprFactor) ParenExprFactor
+		   (ExprFactor) LPAREN Expr RPAREN
 		   ;
 
-ParenExprFactor ::= (ParenExprFactor) LPAREN Expr RPAREN;
 
-
-FactorList ::= (HasFactorList) FactorList Mulop Factor
-			   |
-			   (NoFactorList) Factor
-			   ;
-
-ActParsFactor ::= (ParenNoActParsFactor) LPAREN RPAREN
-				  |
-				  (ParenActParsFactor) LPAREN ActPars RPAREN
-				  |
-				  (NoParenNoActParsFactor) /* epsilon */
-				  ;
+FactorName ::= (FactorName) Designator;
 
 Designator ::= (BaseDesignator) IDENT:baseName
 			   |
