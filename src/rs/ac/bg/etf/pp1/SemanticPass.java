@@ -24,22 +24,24 @@ public class SemanticPass extends VisitorAdaptor {
 	boolean errorDetected = false;
 	int nVars;
 	
-	Type currType;//Trenutni tip za constDecl i varDecl
+	Type currType;// Trenutni tip za constDecl i varDecl
 	
-	int currPos = 0; //Trenutni indeks enuma
-	String currEnumName; //Trenutni naziv enuma
-	ArrayList<Integer> enumElems = new ArrayList<>(); //Svi brojevi iskorisceni za enum
+	int currPos = 0; // Trenutni indeks enuma
+	String currEnumName; // Trenutni naziv enuma
+	ArrayList<Integer> enumElems = new ArrayList<>(); // Svi brojevi iskorisceni za enum
 	
-	Obj currentMethodDecl = null; //Trenutna metoda koja se obradjuje
+	Obj currentMethodDecl = null; // Trenutna metoda koja se obradjuje
 	
-	Stack<Obj> methodCallStackObj = new Stack<>();
+	Stack<Obj> methodCallStackObj = new Stack<>();// Objekat pozvane metode za svaki nivo poziva
 	Stack<Integer> methodCallStackCounter = new Stack<>();
 	
-	boolean returnFound = false; //Da li je pronadjen return u telu metode
+	int formalParsCount = 0; // Broj formalnih parametara za opis i pretragu metode
 	
-	int formalParsCount = 0; //Broj formalnih parametara za opis i pretragu metode
+	boolean returnFound = false; // Da li je pronadjen return u telu metode
 	
-	
+	Stack<Integer> forLoopCallStack = new Stack<>(); // Da li su trenutni neterminali u ovkiru for petlje
+	Stack<Integer> switchCallStack = new Stack<>(); // Da li su trenutni neterminali u okviru switch-a
+	Stack<ArrayList<Integer>> usedSwitchNums = new Stack<>(); // Lista iskoriscenih konstanti za trenutni switch
 	
 	Logger log = Logger.getLogger(getClass());
 	
@@ -342,7 +344,7 @@ public class SemanticPass extends VisitorAdaptor {
 	
 	//MethodDecl obrada
 	
-	//TODO:
+	//TODO: dodaj test za ovo!
 	
 	//DesignatorStatement ::= Designator LPAREN ActPars RPAREN
 	//chr(e); e mora biti izraz tipa int.
@@ -447,6 +449,111 @@ public class SemanticPass extends VisitorAdaptor {
 			report_error("Formalni parametar " + fPars.getName() + " je vec deklarisan. Greska", fPars);
 		}
 	}
+	
+	
+	
+	
+	//Statement obrada
+	
+	public void visit(BreakStatement statement) {
+		if(forLoopCallStack.empty() && switchCallStack.empty()) {
+			report_error("Break nije u okviru for petlje ili switch-a. Greska", statement);
+		}
+	}
+	
+	public void visit(ContinueStatement statement) {
+		if(forLoopCallStack.empty()) {
+			report_error("Continue nije u okviru for petlje. Greska", statement);
+		}
+	}
+	
+	public void visit(ReturnStatement statement) {
+		if(currentMethodDecl == null) {
+			report_error("Return iskaz ne sme postojati izvan tela funkcije.", statement);
+		}
+		else {
+			returnFound = true;
+			if(currentMethodDecl.getType() != TabExtended.noType) {
+				report_error("Funkcija " + currentMethodDecl.getName() + " mora imati povratnu vrednost ali ona nije prosledjena return naredbom. Greska", statement);
+			}
+		}
+	}
+	
+	public void visit(ReturnValueStatement statement) {
+		if(currentMethodDecl == null) {
+			report_error("Return iskaz ne sme postojati izvan tela funkcije.", statement);
+		}
+		else {
+			returnFound = true;
+			if(!statement.getExpr().struct.equals(currentMethodDecl.getType())) {
+				report_error("Povratna vrednost funkcije " + currentMethodDecl.getName() + " nije istog tipa kao izraz Expr. Greska", statement);
+			}
+		}
+	}
+	
+	public void visit(ReadStatement statement) {
+		Obj obj = statement.getDesignator().obj;
+		if(obj.getKind() == Obj.Var || obj.getKind() == Obj.Fld || obj.getKind() == Obj.Elem) {
+			if(!(obj.getType() == TabExtended.intType || obj.getType() == TabExtended.enumType || obj.getType() == TabExtended.boolType || obj.getType() == TabExtended.charType)) {
+				report_error("Designator nije tipa int, char ili bool. Greska", statement);
+			}
+		}
+		else {
+			report_error("Designator ne oznacava promenljivu, element niza ili polje unutar objekta. Greska", statement);
+		}
+	}
+	
+	public void visit(PrintStatement statement) {
+		Struct struct = statement.getExpr().struct;
+		if(!(struct == TabExtended.intType || struct == TabExtended.enumType || struct == TabExtended.boolType || struct == TabExtended.charType)) {
+			report_error("Designator nije tipa int, char ili bool. Greska", statement);
+		}
+	}
+	
+	public void visit(HasIfBlockStart statement) {
+		if(statement.getCondition().struct != TabExtended.boolType) {
+			report_error("Uslov u if upitu nije tipa bool. Greska", statement);
+		}
+	}
+	
+	public void visit(SwitchBlockStart statement) {//TODO napisi test gde imas switch u switch u 2 returna
+		switchCallStack.push(statement.getLine());
+		usedSwitchNums.push(new ArrayList<Integer>());
+		if(statement.getExpr().struct != TabExtended.intType) {
+			report_error("Izraz za izbor ulaza switch-a mora biti tipa int. Greska", statement);
+		}
+	}
+	
+	public void visit(HasCaseList entry) {
+		ArrayList<Integer> list = usedSwitchNums.peek();
+		if(list.contains(entry.getNumConst().getVal())){
+			report_error("Ulaz sa vrednoscu " + entry.getNumConst().getVal() + " je vec deklarisan u okviru switch-a. Greska", entry.getNumConst());
+		}
+		else {
+			list.add(entry.getNumConst().getVal());
+		}
+	}
+	
+	public void visit(SwitchStatement statement) {
+		switchCallStack.pop();
+		usedSwitchNums.pop();
+	}
+	
+	public void visit(ForLoopBegin statement) {
+		forLoopCallStack.push(statement.getLine());
+	}
+	
+	public void visit(HasForSecondParam statement) {
+		if(statement.getCondition().struct != TabExtended.boolType) {
+			report_error("Uslov u okviru for petlje nije tipa bool. Greska", statement);
+		}
+	}
+	
+	public void visit(ForStatement statement) {
+		forLoopCallStack.pop();
+	}
+	
+	
 	
 	//DesignatorStatement obrada
 	
@@ -876,12 +983,8 @@ public class SemanticPass extends VisitorAdaptor {
 		
 	}
 	
-	//TODO condition i svi nizi delovi moraju da provere jel su bool
-	
     public boolean passed() {
     	return !errorDetected;
     }
-    
-    //TODO testiraj Factor, Term, expr, DesignatorStatement i ActPars
     
 }

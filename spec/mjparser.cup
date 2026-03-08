@@ -78,7 +78,7 @@ nonterminal AbstractMethodDecl, AbstractMethodDeclList;
 
 nonterminal FormPars, FormParsElem, LastFormParsElem, FormParsElemList;
 
-nonterminal Statement, StatementList, CaseList, ForStatement, DSElemForStatement, CElemForStatement, IfBlockStart;
+nonterminal Statement, StatementList, CaseList, ForLoopBegin, ForLoopFirstParam, ForLoopSecondParam, ForLoopThirdParam, IfBlockStart, SwitchBlockStart;
 
 nonterminal DesignatorStatementName;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct DesignatorStatement;
@@ -295,25 +295,25 @@ Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  |
 			  (IfStatement) IfBlockStart Statement
 			  |
-			  (BStatement) BREAK SEMI
+			  (BreakStatement) BREAK SEMI
 			  |
-			  (CStatement) CONTINUE SEMI
+			  (ContinueStatement) CONTINUE SEMI
 			  |
-			  (ExprRStatement) RETURN Expr SEMI
+			  (ReturnValueStatement) RETURN Expr SEMI
 			  |
-			  (NoExprRStatement) RETURN SEMI
+			  (ReturnStatement) RETURN SEMI
 			  |
-			  (RStatement) READ LPAREN Designator RPAREN SEMI
+			  (ReadStatement) READ LPAREN Designator RPAREN SEMI
 			  |
-			  (NumConstPStatement) PRINT LPAREN Expr COMMA NumConst RPAREN SEMI
+			  (NumConstPrintStatement) PRINT LPAREN Expr COMMA NumConst RPAREN SEMI
 			  |
-			  (PStatement) PRINT LPAREN Expr RPAREN SEMI
+			  (PrintStatement) PRINT LPAREN Expr RPAREN SEMI
 			  |
-			  (SWStatement) SWITCH LPAREN Expr RPAREN LBRACE CaseList RBRACE
+			  (SwitchStatement) SwitchBlockStart LBRACE CaseList RBRACE
 			  |
-			  (FStatement) ForStatement
+			  (ForStatement) ForLoopBegin ForLoopFirstParam SEMI ForLoopSecondParam SEMI ForLoopThirdParam RPAREN Statement
 			  |
-			  (SLStatement) LBRACE StatementList RBRACE
+			  (StatementListStatement) LBRACE StatementList RBRACE
 			  ;
 
 IfBlockStart ::= (HasIfBlockStart) IF LPAREN Condition RPAREN
@@ -322,22 +322,28 @@ IfBlockStart ::= (HasIfBlockStart) IF LPAREN Condition RPAREN
 				 {: parser.report_error("Izvrsen IfBlock oporavak do ) u liniji " + lleft, null); :}
 				 ;
 
+SwitchBlockStart ::= (SwitchBlockStart) SWITCH LPAREN Expr RPAREN;
+
 CaseList ::= (HasCaseList) CaseList CASE NumConst COLON StatementList
 			 |
 			 (NoCaseList) /* epsilon */
 			 ;
 
-ForStatement ::= (ForStatement) FOR LPAREN DSElemForStatement SEMI CElemForStatement SEMI DSElemForStatement RPAREN Statement;
-
-DSElemForStatement ::= (HasDSElemForStatement) DesignatorStatement
+ForLoopBegin ::= (ForLoopBegin) FOR LPAREN;
+ForLoopFirstParam ::= (HasForFirstParam) DesignatorStatement
 					   |
-					   (NoDSElemForStatement) /* epsilon */
+					   (NoForFirstParam) /* epsilon */
 					   ;
 
-CElemForStatement ::= (HasCElemForStatement) Condition
+ForLoopSecondParam ::= (HasForSecondParam) Condition
 					  |
-					  (NoCElemForStatement) /* epsilon */
+					  (NoForSecondParam) /* epsilon */
 					  ;
+
+ForLoopThirdParam ::= (HasForThirdParam) DesignatorStatement
+					   |
+					   (NoForThirdParam) /* epsilon */
+					   ;
 
 StatementList ::= (HasStatementList) StatementList Statement
 				  |

@@ -14,7 +14,7 @@ public class RuleVisitor extends VisitorAdaptor{
 		varDeclCount++;
 	}
 	
-    public void visit(PStatement print) {
+    public void visit(PrintStatement print) {
 		printCallCount++;
 	}
 
