@@ -29,7 +29,7 @@ public class MJParserTest {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/oporavakTest.mj"); //TODO: set as argv[1] // oporavakTest.mj
+			File sourceCode = new File("test/test302.mj"); //TODO: set as argv[1] // oporavakTest.mj
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));

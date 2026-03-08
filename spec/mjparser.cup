@@ -85,13 +85,9 @@ nonterminal rs.etf.pp1.symboltable.concepts.Struct DesignatorStatement;
 
 nonterminal ActPars;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTerm, CondFact;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct CondTerm, CondTermList;
-
-nonterminal rs.etf.pp1.symboltable.concepts.Struct CondFact, CondFactList;
-
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, ExprList, NoTernaryExpr, HasTernaryExpr;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, NoTernaryExpr, HasTernaryExpr;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Term, TermList;
 
@@ -366,32 +362,24 @@ DesignatorStatement ::= (AssignopDesignatorStatement) DesignatorStatementName As
 
 DesignatorStatementName ::= (DesignatorStatementName) Designator;
 
-ActPars ::= (ActPars) ExprList;
+ActPars ::= (MiddleActPars) ActPars COMMA Expr
+			|
+			(LastActPars) Expr;
 
 
 
-Condition ::= (Condition) CondTermList;
+Condition ::= (MiddleCondition) Condition VLINEVLINE CondTerm
+			  |
+			  (LastCondition) CondTerm;
 
-
-
-CondTerm ::= (CondTerm) CondFactList;
-
-CondTermList ::= (HasCondTermList) CondTermList VLINEVLINE CondTerm
-				 |
-				 (NoCondTermList) CondTerm
-				 ;
-
-
-
-CondFact ::= (ExprCondFact) NoTernaryExpr Relop NoTernaryExpr
+CondTerm ::= (MiddleCondTerm) CondTerm AMPERAMPER CondFact
 			 |
-			 (NoExprCondFact) NoTernaryExpr
-			 ;
+			 (LastCondTerm) CondFact;
 
-CondFactList ::= (HasCondFactList) CondFactList AMPERAMPER CondFact
-				 |
-				 (NoCondFactList) CondFact
-				 ;
+CondFact ::= (RelopCondFact) NoTernaryExpr Relop NoTernaryExpr
+			 |
+			 (ExprCondFact) NoTernaryExpr
+			 ;
 
 
 
@@ -407,10 +395,6 @@ NoTernaryExpr ::= (MinusExpr) MINUS TermList
 				  
 HasTernaryExpr ::= (TernaryExpr) Condition QMARK NoTernaryExpr COLON Expr;
 
-ExprList ::= (HasExprList) ExprList COMMA Expr
-			 |
-			 (NoExprList) Expr
-			 ;
 
 
 Term ::= (MiddleTerm) Term:t Mulop Factor:f
@@ -424,11 +408,11 @@ TermList ::= (HasTermList) TermList Addop Term
 			 ;
 
 
-Factor ::= (DesignatorFactor) FactorName
+Factor ::= (DesignatorFactor) Designator:name
 		   |
-		   (NonEmptyFuncCallFactor) FactorName LPAREN ActPars RPAREN
+		   (NonEmptyFuncCallFactor) FactorName ActPars RPAREN
 		   |
-		   (EmptyFuncCallFactor) FactorName LPAREN RPAREN
+		   (EmptyFuncCallFactor) FactorName RPAREN
 		   |
 		   (NumFactor) NumConst
 		   |
@@ -444,7 +428,7 @@ Factor ::= (DesignatorFactor) FactorName
 		   ;
 
 
-FactorName ::= (FactorName) Designator;
+FactorName ::= (FactorName) Designator LPAREN;
 
 Designator ::= (BaseDesignator) IDENT:baseName
 			   |
