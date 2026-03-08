@@ -23,13 +23,17 @@ public class MJSemanticTest {
 		Log4JUtils.instance().prepareLogFile(Logger.getRootLogger());
 	}
 	
+	public static void tsdump() {
+		TabExtended.dump();
+	}
+	
 	public static void main(String[] args) throws Exception {
 		
 		Logger log = Logger.getLogger(MJParserTest.class);
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/test302.mj");
+			File sourceCode = new File("test/testSemanticStatement.mj");
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
@@ -47,7 +51,7 @@ public class MJSemanticTest {
 			log.info("===================================");
 
 			// ispis prepoznatih programskih konstrukcija
-			SemanticPass v = new SemanticPass();
+			SemanticAnalyzer v = new SemanticAnalyzer();
 			prog.traverseBottomUp(v); 
 	      
 			log.info(" Print count calls = " + v.printCallCount);
@@ -55,7 +59,7 @@ public class MJSemanticTest {
 			log.info(" Deklarisanih promenljivih ima = " + v.varDeclCount);
 			
 			log.info("===================================");
-			TabExtended.dump();
+			tsdump();
 			
 			if(!p.errorDetected && v.passed()){
 				log.info("Parsiranje uspesno zavrseno!");

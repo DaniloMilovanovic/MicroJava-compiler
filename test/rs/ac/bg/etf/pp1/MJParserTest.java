@@ -29,14 +29,14 @@ public class MJParserTest {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/test302.mj"); //TODO: set as argv[1] // oporavakTest.mj
+			File sourceCode = new File("test/oporavakTest.mj"); //TODO: set as argv[1] // oporavakTest.mj
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
 			Yylex lexer = new Yylex(br);
 			
 			MJParser p = new MJParser(lexer);
-	        Symbol s = p.debug_parse();  //pocetak parsiranja
+	        Symbol s = p.parse();  //pocetak parsiranja//p.debug_parse();
 	        
 	        Program prog = (Program)(s.value); 
 			// ispis sintaksnog stabla

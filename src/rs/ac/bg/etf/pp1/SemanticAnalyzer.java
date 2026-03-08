@@ -9,7 +9,7 @@ import rs.ac.bg.etf.pp1.ast.*;
 import rs.etf.pp1.symboltable.*;
 import rs.etf.pp1.symboltable.concepts.*;
 
-public class SemanticPass extends VisitorAdaptor {
+public class SemanticAnalyzer extends VisitorAdaptor {
 
 	int printCallCount = 0;
 	int varDeclCount = 0;
@@ -96,30 +96,107 @@ public class SemanticPass extends VisitorAdaptor {
 		int line = (info == null) ? 0: info.getLine();
 		if (line != 0)
 			msg.append (" na liniji ").append(line);
+		msg.append(".");
 		log.error(msg.toString());
 	}
 
-	public void report_info(String message, SyntaxNode info) {
+	public void report_info(String message, SyntaxNode info, Obj sym) {
 		StringBuilder msg = new StringBuilder(message); 
 		int line = (info == null) ? 0: info.getLine();
 		if (line != 0)
 			msg.append (" na liniji ").append(line);
-		log.info(msg.toString());
+		msg.append(". ");
+		
+		
+		if(sym != null) {
+			msg.append("Sym: |");
+			switch (sym.getKind()) {
+			case Obj.Con:   
+				msg.append("Con "); 
+				break;
+			case Obj.Var:  
+				msg.append("Var "); 
+				break;
+			case Obj.Type: 
+				msg.append("Type "); 
+				break;
+			case Obj.Meth: 
+				msg.append("Meth "); 
+				break;
+			case Obj.Fld:  
+				msg.append("Fld "); 
+				break;
+			case Obj.Prog: 
+				msg.append("Prog "); 
+				break;
+			}
+			
+			msg.append(sym.getName()).append(": ");
+			
+			switch (sym.getType().getKind()) {
+				case Struct.None:
+					msg.append("notype");
+					break;
+				case Struct.Int:
+					msg.append("int");
+					break;
+				case Struct.Char:
+					msg.append("char");
+					break;
+				case Struct.Bool:
+					msg.append("bool");
+					break;
+				
+				case Struct.Array:
+					msg.append("Arr of ");
+					
+					switch (sym.getType().getElemType().getKind()) {
+					case Struct.None:
+						msg.append("notype");
+						break;
+					case Struct.Int:
+						msg.append("int");
+						break;
+					case Struct.Char:
+						msg.append("char");
+						break;
+					case Struct.Bool:
+						msg.append("bool");
+						break;
+					case Struct.Class:
+						msg.append("Class");
+						break;
+					}
+					break;
+			}
+			
+			msg.append(", ");
+			msg.append(sym.getAdr());
+			msg.append(", ");
+			msg.append(sym.getLevel());
+					
+	
+			msg.append("|");
+
+			log.info(msg.toString());
+		}
+		
 	}
+	
 	
 	//Program obrada
 	
 	public void visit(ProgName pName) {
 		pName.obj = TabExtended.insert(Obj.Prog, pName.getName(), TabExtended.noType);
 		TabExtended.openScope();
-		report_info("Zapoceta je obrada programa: " + pName.getName() + ". Info", pName);
+		report_info("Zapoceta je obrada programa: " + pName.getName() + ". Info", pName, pName.obj);
 	}
 	
 	public void visit(Program prog) {
 		Obj obj = prog.getProgName().obj;
 		TabExtended.chainLocalSymbols(obj);
 		TabExtended.closeScope();
-		report_info("Zavrsena je obrada programa: " + prog.getProgName().getName() + ". Info", prog);
+		report_info("Zavrsena je obrada programa: " + prog.getProgName().getName() + ". Info", prog, null);
 	}
 	
 	//Type obrada
@@ -130,6 +207,7 @@ public class SemanticPass extends VisitorAdaptor {
     		report_error("Nije pronadjen tip " + type.getTypeName() + " u tabeli simbola! Greska", null);
     		type.struct = TabExtended.noType;
     	}else{
+    		report_info("Pretraga prilikom obrade tipa. Info", type, typeNode);
     		if(Obj.Type == typeNode.getKind()){
     			type.struct = typeNode.getType();
     		}else{
@@ -151,8 +229,8 @@ public class SemanticPass extends VisitorAdaptor {
     
 	public void visit (NoBrackVarDeclElem vDeclElem) {
 		if(!checkCurrentScope(vDeclElem.getName())) {//Simbol nije deklarisan u trenutnom opsegu
-			TabExtended.insert(Obj.Var, vDeclElem.getName(), currType.struct);
-			report_info("Deklarisana promenljiva: " + vDeclElem.getName() + ". Info", vDeclElem);
+			Obj obj = TabExtended.insert(Obj.Var, vDeclElem.getName(), currType.struct);
+			report_info("Deklarisana promenljiva: " + vDeclElem.getName() + ". Info", vDeclElem, obj);
 		}
 		else {//Simbol je vec deklarisan u trenutnom opsegu
 			report_error("Promenljiva " + vDeclElem.getName() + " je vec deklarisana. Greska", vDeclElem);
@@ -162,8 +240,8 @@ public class SemanticPass extends VisitorAdaptor {
 
 	public void visit (NoBrackLastVarDeclElem vDeclElem) {
 		if(!checkCurrentScope(vDeclElem.getName())) {//Simbol nije deklarisan u trenutnom opsegu
-			TabExtended.insert(Obj.Var, vDeclElem.getName(), currType.struct);
-			report_info("Deklarisana promenljiva: " + vDeclElem.getName() + ". Info", vDeclElem);
+			Obj obj = TabExtended.insert(Obj.Var, vDeclElem.getName(), currType.struct);
+			report_info("Deklarisana promenljiva: " + vDeclElem.getName() + ". Info", vDeclElem, obj);
 		}
 		else {//Simbol je vec deklarisan u trenutnom opsegu
 			report_error("Promenljiva " + vDeclElem.getName() + " je vec deklarisana. Greska", vDeclElem);
@@ -179,8 +257,8 @@ public class SemanticPass extends VisitorAdaptor {
 				
 			}
 			else {//Postoji struktura niza za nas tip
-				TabExtended.insert(Obj.Var, vDeclElem.getName(), arrayType);
-				report_info("Deklarisana promenljiva: " + vDeclElem.getName() + ". Info", vDeclElem);
+				Obj obj = TabExtended.insert(Obj.Var, vDeclElem.getName(), arrayType);
+				report_info("Deklarisana promenljiva: " + vDeclElem.getName() + ". Info", vDeclElem, obj);
 			}
 		}
 		else {//Simbol je vec deklarisan u trenutnom opsegu
@@ -197,8 +275,8 @@ public class SemanticPass extends VisitorAdaptor {
 				
 			}
 			else {//Postoji struktura niza za nas tip
-				TabExtended.insert(Obj.Var, vDeclElem.getName(), arrayType);
-				report_info("Deklarisana promenljiva: " + vDeclElem.getName() + ". Info", vDeclElem);
+				Obj obj = TabExtended.insert(Obj.Var, vDeclElem.getName(), arrayType);
+				report_info("Deklarisana promenljiva: " + vDeclElem.getName() + ". Info", vDeclElem, obj);
 			}
 		}
 		else {//Simbol je vec deklarisan u trenutnom opsegu
@@ -217,14 +295,13 @@ public class SemanticPass extends VisitorAdaptor {
 	}
 	
 	public void visit(NumConstDeclElem cDecl) {
-		
 		if(TabExtended.noObj == TabExtended.find(cDecl.getName())) { //Konstanta nije prethodno deklarisana
 			
 			if(currType.getTypeName().equals("int")) {//Ako je trenutni tip int dodaj u tabelu simbola
 				
 				Obj constant = TabExtended.insert(Obj.Con, cDecl.getName(), TabExtended.intType);
 				constant.setAdr(cDecl.getNumConst().getVal());
-				report_info("Deklarisana konstanta: " + cDecl.getName() +" sa vrednoscu " + cDecl.getNumConst().getVal() + ". Info", cDecl);
+				report_info("Deklarisana konstanta: " + cDecl.getName() +" sa vrednoscu " + cDecl.getNumConst().getVal() + ". Info", cDecl, constant);
 			}
 			else {//Ako trenutni tip nije int greska
 				report_error("Tip konstante " + currType.getTypeName() + " i int se ne poklapaju. Greska", cDecl);
@@ -244,7 +321,7 @@ public class SemanticPass extends VisitorAdaptor {
 			if(currType.getTypeName().equals("char")) {//Ako je trenutni tip char dodaj u tabelu simbola
 				Obj constant = TabExtended.insert(Obj.Con, cDecl.getName(), TabExtended.charType);
 				constant.setAdr(cDecl.getCharConst().getVal());
-				report_info("Deklarisana konstanta: " + cDecl.getName() +" sa vrednoscu " + cDecl.getCharConst().getVal() + ". Info", cDecl);
+				report_info("Deklarisana konstanta: " + cDecl.getName() +" sa vrednoscu " + cDecl.getCharConst().getVal() + ". Info", cDecl, constant);
 			}
 			
 			else {//Ako trenutni tip nije char greska
@@ -266,11 +343,11 @@ public class SemanticPass extends VisitorAdaptor {
 				Obj constant = TabExtended.insert(Obj.Con, cDecl.getName(), TabExtended.boolType);
 				if(cDecl.getBoolConst() instanceof TrueBoolConst) {
 					constant.setAdr(1);
-					report_info("Deklarisana konstanta: " + cDecl.getName() + " sa vrednoscu True. Info", cDecl);
+					report_info("Deklarisana konstanta: " + cDecl.getName() + " sa vrednoscu True. Info", cDecl, constant);
 				}
 				else {
 					constant.setAdr(0);
-					report_info("Deklarisana konstanta: " + cDecl.getName() + " sa vrednoscu False. Info", cDecl);
+					report_info("Deklarisana konstanta: " + cDecl.getName() + " sa vrednoscu False. Info", cDecl, constant);
 				}
 				
 			}
@@ -292,7 +369,7 @@ public class SemanticPass extends VisitorAdaptor {
 		enumElems.clear();
 		eDeclName.obj = TabExtended.insert(Obj.Type, eDeclName.getName(), TabExtended.enumType);
 		TabExtended.openScope();
-		report_info("Zapoceta je obrada enum-a: " + eDeclName.getName() + ". Info", eDeclName);
+		report_info("Zapoceta je obrada enum-a: " + eDeclName.getName() + ". Info", eDeclName, eDeclName.obj);
 	}
 	
 	public void visit(EnumDecl eDecl) {
@@ -300,7 +377,7 @@ public class SemanticPass extends VisitorAdaptor {
 		TabExtended.chainLocalSymbols(obj);
 		TabExtended.closeScope();
 		
-		report_info("Zavrsena je obrada enum-a: " + eDecl.getEnumDeclName().getName() + ". Info", eDecl);
+		report_info("Zavrsena je obrada enum-a: " + eDecl.getEnumDeclName().getName() + ". Info", eDecl, null);
 	}
 	
 	public void visit(NoValEnumDeclElem eDeclElem) {
@@ -356,7 +433,7 @@ public class SemanticPass extends VisitorAdaptor {
     	mDecl.obj = currentMethodDecl;
     	formalParsCount = 0;
     	Tab.openScope();
-		report_info("Obradjuje se funkcija " + mDecl.getName() + ". Info", mDecl);
+		report_info("Obradjuje se funkcija " + mDecl.getName() + ". Info", mDecl, mDecl.obj);
 	}
 	
 	public void visit(VMethodDecl mDecl) {
@@ -364,7 +441,7 @@ public class SemanticPass extends VisitorAdaptor {
     	mDecl.obj = currentMethodDecl;
     	formalParsCount = 0;
     	Tab.openScope();
-		report_info("Obradjuje se funkcija " + mDecl.getName() + ". Info", mDecl);
+		report_info("Obradjuje se funkcija " + mDecl.getName() + ". Info", mDecl, mDecl.obj);
 	}
 	
 	public void visit(MethodDecl mDecl) {
@@ -392,7 +469,7 @@ public class SemanticPass extends VisitorAdaptor {
 	public void visit(NoBrackFormParsElem fPars) {
 		if(!checkCurrentScope(fPars.getName())) {// Simbol nije deklarisan u trenutnom opsegu
 			Obj formPar = TabExtended.insert(Obj.Var, fPars.getName(), fPars.getType().struct);
-			report_info("Deklarisan formalni parametar: " + fPars.getName() + ". Info", fPars);
+			report_info("Deklarisan formalni parametar: " + fPars.getName() + ". Info", fPars, formPar);
 			formPar.setAdr(formalParsCount);
 			formalParsCount++;
 		}
@@ -404,7 +481,7 @@ public class SemanticPass extends VisitorAdaptor {
 	public void visit(NoBrackLastFormParsElem fPars) {
 		if(!checkCurrentScope(fPars.getName())) {// Simbol nije deklarisan u trenutnom opsegu
 			Obj formPar = TabExtended.insert(Obj.Var, fPars.getName(), fPars.getType().struct);
-			report_info("Deklarisan formalni parametar: " + fPars.getName() + ". Info", fPars);
+			report_info("Deklarisan formalni parametar: " + fPars.getName() + ". Info", fPars, formPar);
 			formPar.setAdr(formalParsCount);
 			formalParsCount++;
 		}
@@ -422,7 +499,7 @@ public class SemanticPass extends VisitorAdaptor {
 			}
 			else {// Postoji struktura niza za nas tip
 				Obj formPar = TabExtended.insert(Obj.Var, fPars.getName(), arrayType);
-				report_info("Deklarisana formalni parametar: " + fPars.getName() + ". Info", fPars);
+				report_info("Deklarisana formalni parametar: " + fPars.getName() + ". Info", fPars, formPar);
 				formPar.setAdr(formalParsCount);
 				formalParsCount++;
 			}
@@ -440,7 +517,7 @@ public class SemanticPass extends VisitorAdaptor {
 			}
 			else {// Postoji struktura niza za nas tip
 				Obj formPar = TabExtended.insert(Obj.Var, fPars.getName(), arrayType);
-				report_info("Deklarisana formalni parametar: " + fPars.getName() + ". Info", fPars);
+				report_info("Deklarisana formalni parametar: " + fPars.getName() + ". Info", fPars, formPar);
 				formPar.setAdr(formalParsCount);
 				formalParsCount++;
 			}
@@ -931,6 +1008,9 @@ public class SemanticPass extends VisitorAdaptor {
 		if(des.obj == TabExtended.noObj) {
 			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
 		}
+		else {
+			report_info("Pretraga prilikom obrade designatora. Info", des, des.obj);
+		}
 	}
 
 	public void visit(EnumDesignator des) {
@@ -941,15 +1021,22 @@ public class SemanticPass extends VisitorAdaptor {
 			des.obj = TabExtended.noObj;
 		}
 		else {
+			report_info("Pretraga prilikom obrade enum designatora. Info", des, enumObj);
 			des.obj = findEnumSymbol(enumObj, name);
 			if(des.obj == TabExtended.noObj) {// Provera da li postoji konstanta nabrajanja u tabeli simbola
 				report_error("Designator " + name  + " nije konstanta nabrajanja u okviru enum-a " + des.getBaseName() + ". Greska", des);
+			}
+			else {
+				report_info("Pretraga prilikom obrade konstante enum designatora. Info", des, des.obj);
 			}
 		}
 	}
 
 	public void visit(LengthDesignator des) {
 		des.obj = TabExtended.find(des.getBaseName());
+		
+		if(des.obj != TabExtended.noObj) report_info("Pretraga prilikom obrade designatora duzine. Info", des, des.obj);
+		
 		if(des.obj == TabExtended.noObj) {// Provera da li postoji designator u tabeli simbola
 			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
 			des.obj = TabExtended.noObj;
@@ -965,6 +1052,9 @@ public class SemanticPass extends VisitorAdaptor {
 	
 	public void visit(ArrayDesignator des) {
 		Obj obj = TabExtended.find(des.getBaseName());
+		
+		if(des.obj != TabExtended.noObj) report_info("Pretraga prilikom obrade designatora niza. Info", des, des.obj);
+		
 		if(obj == TabExtended.noObj) {// Provera da li postoji designator u tabeli simbola
 			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
 			des.obj = TabExtended.noObj;
