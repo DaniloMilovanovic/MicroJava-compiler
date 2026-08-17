@@ -86,7 +86,7 @@ nonterminal FactorList;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Factor, ActParsFactor,  FactorName;
 
 nonterminal DesignatorName;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem, DesignatorSuffix;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem, PeriodElem;
 
 nonterminal Assignop, Relop, Addop, Mulop;
 
@@ -268,12 +268,7 @@ StatementList ::= (HasStatementList) StatementList Statement
 				  ;
 
 
-
 DesignatorStatement ::= (AssignopDesignatorStatement) DesignatorStatementName Assignop Expr
-                        |
-                        (FindAnyDesignatorStatement) DesignatorStatementName Assignop Designator PERIOD FINDANY LPAREN Expr RPAREN
-                        |
-                        (MapDesignatorStatement) DesignatorStatementName Assignop Designator PERIOD MAP LPAREN IDENT ARROW Expr RPAREN
 						|
 						(ActParsDesignatorStatement) DesignatorStatementName LPAREN ActPars RPAREN
 						|
@@ -283,7 +278,7 @@ DesignatorStatement ::= (AssignopDesignatorStatement) DesignatorStatementName As
 						|
 						(MinusMinusDesignatorStatement) DesignatorStatementName MINUSMINUS
 						|
-						(ErrorDesignatorStatement)error:l
+						(ErrorDesignatorStatement) error:l
 						{: parser.report_error("Izvrsen DesignatorStatement oporavak do ; u liniji " + lleft, null); :}
 						;
 
@@ -355,14 +350,19 @@ Factor ::= (DesignatorFactor) Designator:name
 
 FactorName ::= (FactorName) Designator LPAREN;
 
-Designator ::= (BaseDesignator) IDENT:baseName DesignatorSuffix;
+Designator ::= (BaseDesignator) IDENT:baseName
+			   |
+			   (PeriodDesignator) IDENT:baseName PERIOD PeriodElem
+			   |
+			   (ArrayDesignator) IDENT:baseName LBRACK Expr RBRACK
+			   ;
 
- DesignatorSuffix ::= (NoDesignatorSuffix) /* epsilon */
-                    |
-                    (LengthDesignatorSuffix) PERIOD LEN
-                    |
-                    (ArrayDesignatorSuffix) LBRACK Expr RBRACK
-                    ;
+PeriodElem ::= (LenPeriodElem) LEN
+			   |
+			   (FindAnyPeriodElem) FINDANY LPAREN Expr RPAREN
+			   |
+			   (MapPeriodElem) MAP LPAREN IDENT:mapElem ARROW Expr RPAREN
+			   ;
 
 Assignop ::= (Assignop) EQUAL;
 

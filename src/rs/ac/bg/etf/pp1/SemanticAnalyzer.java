@@ -940,23 +940,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 
-	public void visit(LengthDesignator des) {
-		des.obj = TabExtended.find(des.getBaseName());
-		
-		if(des.obj != TabExtended.noObj) report_info("Pretraga prilikom obrade designatora duzine. Info", des, des.obj);
-		
-		if(des.obj == TabExtended.noObj) {// Provera da li postoji designator u tabeli simbola
-			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
-			des.obj = TabExtended.noObj;
-		}
-		else if(des.obj.getType().getKind() != Struct.Array) {// Provera da li je simbol niz
-			report_error("Designator " + des.obj.getName()  + " nije niz. Greska", des);
-			des.obj = TabExtended.noObj;
-		}
-		else {
-			des.obj = new Obj(Obj.Con, des.getBaseName(), TabExtended.intType);
-		}
-	}
 	
 	public void visit(ArrayDesignator des) {
 		Obj obj = TabExtended.find(des.getBaseName());
@@ -981,79 +964,62 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 	}
 
-	//FindAny obrada
-	public void visit(FindAnyStatement statement) {
-		Obj leftObj = statement.getDesignator().obj;
-		Obj rightObj = statement.getDesignator1().obj;
-		Struct exprType = statement.getExpr().struct;
+	public void visit(PeriodDesignator des){
+		Obj obj = TabExtended.find(des.getBaseName());
 
-		// Provera levog designatora - mora biti promenljiva tipa bool
-		if(leftObj.getKind() != Obj.Var && leftObj.getKind() != Obj.Fld && leftObj.getKind() != Obj.Elem) {
-			report_error("Designator sa leve strane findAny mora oznacavati promenljivu. Greska", statement);
+		if(obj == TabExtended.noObj){
+			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
+			des.obj = TabExtended.noObj;
 		}
-		else if(leftObj.getType() != TabExtended.boolType) {
-			report_error("Designator sa leve strane findAny mora biti tipa bool. Greska", statement);
-		}
-
-		// Provera desnog designatora - mora biti niz ugrađenog tipa
-		if(rightObj.getType().getKind() != Struct.Array) {
-			report_error("Designator sa desne strane findAny mora oznacavati niz. Greska", statement);
+		else if(obj.getType().getKind() != Struct.Array) {
+			report_error("Designator " + des.getBaseName() + " nije niz. Greska", des);
+			des.obj = TabExtended.noObj;
 		}
 		else {
-			// Provera da je niz ugrađenog tipa (int, char, bool)
-			Struct elemType = rightObj.getType().getElemType();
-			if(elemType != TabExtended.intType && elemType != TabExtended.charType && elemType != TabExtended.boolType) {
-				report_error("Niz u findAny mora biti ugrađenog tipa (int, char, bool). Greska", statement);
+			report_info("Pretraga prilikom obrade designatora. Info", des, obj);
+
+			PeriodElem elem = des.getPeriodElem();
+
+			if(elem instanceof LenPeriodElem){
+				// .length → int constant
+				des.obj = new Obj(Obj.Con, des.getBaseName() + ".length", TabExtended.intType);
+				report_info("Pristup duzini niza " + des.getBaseName() + ". Info", des, des.obj);
 			}
-			// Provera da je Expr kompatibilan sa tipom elemenata niza
-			else if(!exprType.compatibleWith(elemType)) {
-				report_error("Expr nije kompatibilan sa tipom elemenata niza. Greska", statement);
-			}
-		}
-	}
+			else if(elem instanceof FindAnyPeriodElem){
+				FindAnyPeriodElem findAny = (FindAnyPeriodElem) elem;
+				Struct elemType = obj.getType().getElemType();
+				Struct exprType = findAny.getExpr().struct;
 
-	//Map obrada
-	public void visit(MapStatement statement) {
-		Obj leftObj = statement.getDesignator().obj;
-		Obj rightObj = statement.getDesignator1().obj;
-		Obj identObj = TabExtended.find(statement.getIdent());
-		Struct exprType = statement.getExpr().struct;
-
-		// Provera levog designatora - mora biti niz
-		if(leftObj.getType().getKind() != Struct.Array) {
-			report_error("Designator sa leve strane map mora oznacavati niz. Greska", statement);
-		}
-
-		// Provera desnog designatora - mora biti niz ugrađenog tipa
-		if(rightObj.getType().getKind() != Struct.Array) {
-			report_error("Designator sa desne strane map mora oznacavati niz. Greska", statement);
-		}
-		else {
-			Struct rightElemType = rightObj.getType().getElemType();
-
-			// Provera da je niz ugrađenog tipa (int, char, bool)
-			if(rightElemType != TabExtended.intType && rightElemType != TabExtended.charType && rightElemType != TabExtended.boolType) {
-				report_error("Niz u map mora biti ugrađenog tipa (int, char, bool). Greska", statement);
-			}
-
-			// Provera da je ident deklarisan i istog tipa kao elementi niza
-			if(identObj == TabExtended.noObj) {
-				report_error("Identifikator " + statement.getIdent() + " nije deklarisan. Greska", statement);
-			}
-			else if(!identObj.getType().compatibleWith(rightElemType)) {
-				report_error("Identifikator " + statement.getIdent() + " nije istog tipa kao elementi niza. Greska", statement);
-			}
-
-			// Provera da je levi niz istog tipa kao desni niz
-			if(leftObj.getType().getKind() == Struct.Array && rightObj.getType().getKind() == Struct.Array) {
-				if(!leftObj.getType().getElemType().compatibleWith(rightObj.getType().getElemType())) {
-					report_error("Levi niz nije istog tipa kao desni niz. Greska", statement);
+				if(!exprType.compatibleWith(elemType)) {
+					report_error("Expr nije kompatibilan sa tipom elemenata niza. Greska", findAny);
 				}
+				des.obj = new Obj(Obj.Con, des.getBaseName() + ".findAny", TabExtended.boolType);
+				report_info("Poziv funkcije findAny nad nizom " + des.getBaseName() + ". Info", des, des.obj);
 			}
+			else if(elem instanceof MapPeriodElem){
+				MapPeriodElem mapElem = (MapPeriodElem) elem;
+				Struct elemType = obj.getType().getElemType();
 
-			// Provera da je Expr kompatibilan sa tipom elemenata niza
-			if(!exprType.compatibleWith(rightElemType)) {
-				report_error("Expr nije kompatibilan sa tipom elemenata niza. Greska", statement);
+				// Check ident using getI1()
+				Obj identObj = TabExtended.find(mapElem.getMapElem());
+				if(identObj != TabExtended.noObj) {
+					if(!identObj.getType().compatibleWith(elemType)) {
+						report_error("Identifikator " + mapElem.getMapElem() + " nije istog tipa kao elementi niza. Greska", mapElem);
+					}
+					else {
+						report_info("Pretraga prilikom obrade map identifikatora. Info", mapElem, identObj);
+					}
+				}
+
+				// Check Expr
+				Struct exprType = mapElem.getExpr().struct;
+				if(!exprType.compatibleWith(elemType)) {
+					report_error("Expr nije kompatibilan sa tipom elemenata niza. Greska", mapElem);
+				}
+
+				// map returns array of same type
+				des.obj = new Obj(Obj.Con, des.getBaseName() + ".map", obj.getType());
+				report_info("Poziv funkcije map nad nizom " + des.getBaseName() + ". Info", des, des.obj);
 			}
 		}
 	}
