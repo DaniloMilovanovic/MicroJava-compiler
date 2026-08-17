@@ -10,10 +10,6 @@ public class DumpSymbolTableVisitorExtended extends DumpSymbolTableVisitor {
             output.append("bool");
             return;
         }
-        if (structToVisit.getKind() == Struct.Enum) {
-            output.append("enum");
-            return;
-        }
         
         super.visitStructNode(structToVisit);
     }

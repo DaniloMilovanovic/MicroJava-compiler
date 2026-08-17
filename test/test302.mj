@@ -4,10 +4,10 @@ program test302
 
 const int jedan = 1;
 
-int i;
+int i, j;
 bool ibool;
 
-int niz[];
+int niz[], niz2[], niz3[], niz4[];
 {
 	
 	int sum(int z, int d)
@@ -82,26 +82,21 @@ int niz[];
 		print(inkrement(niz[2], 2));
 		print(verify() ? 't' : 'f');
 		
-		for (i = 0; i < 10; i++) {
-			switch(i+1){
-				case 1:
-					print(1);
-					break;
-				case 3:
-					print(3);
-				case 2:
-					print(2);
-					break;
-				case 5:
-					print(5);
-					i = i + 2;
-					continue;
-				case 6:
-					print(6);
-				case 9:
-					print(9);
-			}
+		niz2 = new int[5];
+		niz2[0] = 0; niz2[1 = 1; niz2[2] = 2; niz2[3] = 3; niz2[4] = 4; 
+		
+		niz3 = niz2.map(i => i * 5);
+		for(i = 0; i < niz3.length; i++){
+			print(niz3[i]);
 			print(eol);
 		}
+		
+		read(j);
+		niz4 = niz2.map(i => i + j);
+		for(i = 0; i < niz4.length; i++){
+			print(niz4[i]);
+			print(eol);
+		}
+		
 	}
 }

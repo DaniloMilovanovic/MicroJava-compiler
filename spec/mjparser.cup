@@ -50,8 +50,8 @@ scan with {:
 :}
 
 
-terminal PROG, BREAK, ENUM, CLASS, ABSTRACT, ELSE, CONST, IF, NEW, PRINT, READ, RETURN, VOID, EXTENDS, CONTINUE, FOR, LEN, SWITCH, CASE, TRUE, FALSE;
-terminal PLUS, MINUS, STAR, DIV, MOD, EQUAL, LESS, GREATER, COLON, SEMI, COMMA, PERIOD, QMARK, EMARK, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
+terminal PROG, BREAK, ELSE, CONST, IF, NEW, PRINT, READ, RETURN, VOID, CONTINUE, FOR, LEN, FINDANY, MAP, TRUE, FALSE;
+terminal PLUS, MINUS, STAR, DIV, MOD, ARROW, EQUAL, LESS, GREATER, COLON, SEMI, COMMA, PERIOD, QMARK, EMARK, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal AMPER, VLINE, PLUSPLUS, MINUSMINUS, EQUALEQUAL, NOTEQUAL, GREATEREQUAL, LESSEQUAL, AMPERAMPER, VLINEVLINE;
 terminal int NUMBER;
 terminal String IDENT;
@@ -64,21 +64,12 @@ nonterminal ConstDecl, ConstDeclElem, ConstDeclType, ConstDeclElemList;
 
 nonterminal VarDecl, VarDeclElem, LastVarDeclElem, VarDeclElemList, VarDeclList, Elems;
 
-nonterminal EnumDeclElem, EnumDeclElemList;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj EnumDecl, EnumDeclName;
-
-nonterminal ClassDecl, ExtendsClassDecl, MethodDeclClassDecl, MethodDeclListClassDecl;
-
-nonterminal AbstractClassDecl, AbstractMethodDeclAbstractClassDecl;
-
 nonterminal MethodDecl, FormParsMethodDecl, MethodDeclList;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj TypeMethodDecl;
 
-nonterminal AbstractMethodDecl, AbstractMethodDeclList;
-
 nonterminal FormPars, FormParsElem, LastFormParsElem, FormParsElemList;
 
-nonterminal Statement, StatementList, CaseList, ForLoopBegin, ForLoopFirstParam, ForLoopSecondParam, ForLoopThirdParam, IfBlockStart, SwitchBlockStart;
+nonterminal Statement, StatementList, ForLoopBegin, ForLoopFirstParam, ForLoopSecondParam, ForLoopThirdParam, IfBlockStart;
 
 nonterminal DesignatorStatementName;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct DesignatorStatement;
@@ -95,7 +86,7 @@ nonterminal FactorList;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Factor, ActParsFactor,  FactorName;
 
 nonterminal DesignatorName;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem, DesignatorSuffix;
 
 nonterminal Assignop, Relop, Addop, Mulop;
 
@@ -123,12 +114,6 @@ ProgDeclElemList ::= (HasProgDeclElemList) ProgDeclElemList ProgDeclElem
 ProgDeclElem ::= (ConstProgDeclElem) ConstDecl
 				 |
 				 (VarProgDeclElem) VarDecl
-				 |
-				 (ClassProgDeclElem) ClassDecl
-				 |
-				 (EnumProgDeclElem) EnumDecl
-				 |
-				 (AbstractClassProgDeclElem) AbstractClassDecl
 				 ;
 
 ConstDecl ::= (ConstDecl) CONST ConstDeclType:type ConstDeclElem ConstDeclElemList SEMI;
@@ -185,53 +170,6 @@ VarDeclList ::= (HasVarDeclList) VarDeclList VarDecl
 				;
 
 
-
-EnumDecl ::= (EnumDecl) ENUM EnumDeclName:name LBRACE EnumDeclElem EnumDeclElemList RBRACE;
-
-EnumDeclName ::= (EnumDeclName) IDENT:name;
-
-EnumDeclElemList ::= (HasEnumDeclElemList) EnumDeclElemList COMMA EnumDeclElem
-					 |
-					 (NoEnumDeclElemList) /* epsilon */
-					 ;
-
-EnumDeclElem ::= (NoValEnumDeclElem) IDENT:name
-				 |
-				 (ValEnumDeclElem) IDENT:name EQUAL NumConst:num
-				 ;
-
-
-
-
-ClassDecl ::= (ClassDecl) CLASS IDENT ExtendsClassDecl LBRACE VarDeclList MethodDeclClassDecl RBRACE;
-
-ExtendsClassDecl ::= (HasExtendsClassDecl) EXTENDS Type
-					 |
-					 (NoExtendsClassDecl) /* epsilon */
-					 |
-					 EXTENDS error:l LBRACE
-					 {: parser.report_error("Izvrsen Extends oporavak do } u liniji " + lleft, null); :}
-					 ;
-
-MethodDeclClassDecl ::= (HasMethodDeclClassDecl) LBRACE MethodDeclListClassDecl RBRACE
-						|
-						(NoMethodDeclClassDecl) /* epsilon */
-						;
-
-MethodDeclListClassDecl ::= (HasMethodDeclListClassDecl) MethodDeclListClassDecl MethodDecl
-							|
-							(NoMethodDeclListClassDecl) /* epsilon */
-							;
-
-
-AbstractClassDecl ::= (AbstractClassDecl) ABSTRACT CLASS IDENT ExtendsClassDecl LBRACE VarDeclList AbstractMethodDeclAbstractClassDecl RBRACE;
-
-AbstractMethodDeclAbstractClassDecl ::= (HasAMDAbstractClassDecl) LBRACE AbstractMethodDeclList RBRACE
-										 |
-										 (NoAMDAbstractClassDecl) /* epsilon */
-										 ;
-
-
 MethodDecl ::= (MethodDecl) TypeMethodDecl LPAREN FormParsMethodDecl RPAREN VarDeclList LBRACE StatementList RBRACE;
 
 TypeMethodDecl ::= (TMethodDecl) Type IDENT:name
@@ -249,18 +187,6 @@ MethodDeclList ::= (HasMethodDeclList) MethodDeclList MethodDecl
 				   |
 				   (NoMethodDeclList) /* epsilon */
 				   ;
-
-
-
-AbstractMethodDecl ::= (AbstractMethodDecl) ABSTRACT TypeMethodDecl IDENT LPAREN FormParsMethodDecl RPAREN;
-
-AbstractMethodDeclList ::= (HasMAbstractMethodDeclList) AbstractMethodDeclList MethodDecl
-						   |
-						   (HasAMAbstractMethodDeclList) AbstractMethodDeclList AbstractMethodDecl SEMI
-						   |
-						   (NoAbstractMethodDeclList) /* epsilon */
-						   ;
-
 
 
 FormPars ::= (FormPars) FormParsElemList;
@@ -309,8 +235,6 @@ Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  |
 			  (PrintStatement) PRINT LPAREN Expr RPAREN SEMI
 			  |
-			  (SwitchStatement) SwitchBlockStart LBRACE CaseList RBRACE
-			  |
 			  (ForStatement) ForLoopBegin ForLoopFirstParam SEMI ForLoopSecondParam SEMI ForLoopThirdParam RPAREN Statement
 			  |
 			  (StatementListStatement) LBRACE StatementList RBRACE
@@ -321,13 +245,6 @@ IfBlockStart ::= (HasIfBlockStart) IF LPAREN Condition RPAREN
 				 (ErrorIfBlockStart) IF LPAREN error:l RPAREN
 				 {: parser.report_error("Izvrsen IfBlock oporavak do ) u liniji " + lleft, null); :}
 				 ;
-
-SwitchBlockStart ::= (SwitchBlockStart) SWITCH LPAREN Expr RPAREN;
-
-CaseList ::= (HasCaseList) CaseList CASE NumConst COLON StatementList
-			 |
-			 (NoCaseList) /* epsilon */
-			 ;
 
 ForLoopBegin ::= (ForLoopBegin) FOR LPAREN;
 ForLoopFirstParam ::= (HasForFirstParam) DesignatorStatement
@@ -353,6 +270,10 @@ StatementList ::= (HasStatementList) StatementList Statement
 
 
 DesignatorStatement ::= (AssignopDesignatorStatement) DesignatorStatementName Assignop Expr
+                        |
+                        (FindAnyDesignatorStatement) DesignatorStatementName Assignop Designator PERIOD FINDANY LPAREN Expr RPAREN
+                        |
+                        (MapDesignatorStatement) DesignatorStatementName Assignop Designator PERIOD MAP LPAREN IDENT ARROW Expr RPAREN
 						|
 						(ActParsDesignatorStatement) DesignatorStatementName LPAREN ActPars RPAREN
 						|
@@ -426,9 +347,7 @@ Factor ::= (DesignatorFactor) Designator:name
 		   |
 		   (BoolFactor) BoolConst
 		   |
-		   (NewArrayFactor)NEW Type LBRACK Expr RBRACK 
-		   |
-		   (NewClassFactor)NEW Type
+		   (NewArrayFactor)NEW Type LBRACK Expr RBRACK
 		   |
 		   (ExprFactor) LPAREN Expr RPAREN
 		   ;
@@ -436,16 +355,14 @@ Factor ::= (DesignatorFactor) Designator:name
 
 FactorName ::= (FactorName) Designator LPAREN;
 
-Designator ::= (BaseDesignator) IDENT:baseName
-			   |
-			   (EnumDesignator) IDENT:baseName PERIOD IDENT:scopeName
-			   |
-			   (LengthDesignator) IDENT:baseName PERIOD LEN
-			   |
-			   (ArrayDesignator) IDENT:baseName LBRACK Expr RBRACK
-			   ;
+Designator ::= (BaseDesignator) IDENT:baseName DesignatorSuffix;
 
- 
+ DesignatorSuffix ::= (NoDesignatorSuffix) /* epsilon */
+                    |
+                    (LengthDesignatorSuffix) PERIOD LEN
+                    |
+                    (ArrayDesignatorSuffix) LBRACK Expr RBRACK
+                    ;
 
 Assignop ::= (Assignop) EQUAL;
 
@@ -494,5 +411,4 @@ BoolConst ::= (TrueBoolConst) TRUE:val
 			  |
 			  (FalseBoolConst) FALSE:val
 			  ;
-			  
 			  

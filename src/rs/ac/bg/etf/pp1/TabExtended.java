@@ -6,7 +6,6 @@ import rs.etf.pp1.symboltable.concepts.*;
 public class TabExtended extends Tab {
 	
 	public static final Struct boolType = new Struct(Struct.Bool);
-	public static final Struct enumType = new Struct(Struct.Enum);
 	public static final Struct intArrayType = new Struct(Struct.Array, intType);
 	public static final Struct charArrayType = new Struct(Struct.Array, charType);
 	public static final Struct boolArrayType = new Struct(Struct.Array, boolType);
