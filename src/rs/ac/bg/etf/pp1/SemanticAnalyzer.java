@@ -31,14 +31,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	ArrayList<Integer> enumElems = new ArrayList<>(); // Svi brojevi iskorisceni za enum
 	
 	Obj currentMethodDecl = null; // Trenutna metoda koja se obradjuje
-	
-	Stack<Obj> methodCallStackObj = new Stack<>();// Objekat pozvane metode za svaki nivo poziva
+    private TMethodDecl mDecl;
+
+    Stack<Obj> methodCallStackObj = new Stack<>();// Objekat pozvane metode za svaki nivo poziva
 	Stack<Integer> methodCallStackCounter = new Stack<>();
 	
 	int formalParsCount = 0; // Broj formalnih parametara za opis i pretragu metode
 	
 	boolean returnFound = false; // Da li je pronadjen return u telu metode
-	
+
+	boolean mainFound = false;
+
 	Stack<Integer> forLoopCallStack = new Stack<>(); // Da li su trenutni neterminali u ovkiru for petlje
 	Stack<Integer> switchCallStack = new Stack<>(); // Da li su trenutni neterminali u okviru switch-a
 	Stack<ArrayList<Integer>> usedSwitchNums = new Stack<>(); // Lista iskoriscenih konstanti za trenutni switch
@@ -196,6 +199,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Obj obj = prog.getProgName().obj;
 		TabExtended.chainLocalSymbols(obj);
 		TabExtended.closeScope();
+
+		if(!mainFound) {
+			report_error("Program nema definisanu main() metodu. Greska", prog);
+		}
+
 		report_info("Zavrsena je obrada programa: " + prog.getProgName().getName() + ". Info", prog, null);
 	}
 	
@@ -430,10 +438,15 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public void visit(TMethodDecl mDecl) {
     	currentMethodDecl = Tab.insert(Obj.Meth, mDecl.getName(), mDecl.getType().struct);
-    	mDecl.obj = currentMethodDecl;
+        this.mDecl = mDecl;
+        mDecl.obj = currentMethodDecl;
     	formalParsCount = 0;
     	Tab.openScope();
 		report_info("Obradjuje se funkcija " + mDecl.getName() + ". Info", mDecl, mDecl.obj);
+
+		if(mDecl.getName().equals("main")) {
+			mainFound = true;
+		}
 	}
 	
 	public void visit(VMethodDecl mDecl) {
@@ -442,9 +455,18 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	formalParsCount = 0;
     	Tab.openScope();
 		report_info("Obradjuje se funkcija " + mDecl.getName() + ". Info", mDecl, mDecl.obj);
+
+		if(mDecl.getName().equals("main")) {
+			mainFound = true;
+		}
 	}
 	
 	public void visit(MethodDecl mDecl) {
+
+		if(currentMethodDecl.getName().equals("main") && currentMethodDecl.getType() != TabExtended.noType) {
+			report_error("Metoda main mora biti void tipa. Greska", mDecl);
+		}
+
 		if(currentMethodDecl.getName().equals("main") && formalParsCount > 0) {
 			if(formalParsCount == 1) {//Cisto zbog zapisa
 				report_error("Metoda main ima 1 formalni parametar sto je vece od 0! Greska", mDecl);
@@ -453,9 +475,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				report_error("Metoda main ima " + formalParsCount + " formalna parametara sto je vece od 0! Greska", mDecl);
 			}
 		}
+
 		if(!returnFound && currentMethodDecl.getType() != Tab.noType){//TODO proveri u izrazima jel postoji return!!!
 			report_error("Funkcija " + currentMethodDecl.getName() + " nema return iskaz! Greska", mDecl);
     	}
+
 		currentMethodDecl.setLevel(formalParsCount);
     	Tab.chainLocalSymbols(currentMethodDecl);
     	Tab.closeScope();
@@ -571,7 +595,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(ReadStatement statement) {
 		Obj obj = statement.getDesignator().obj;
 		if(obj.getKind() == Obj.Var || obj.getKind() == Obj.Fld || obj.getKind() == Obj.Elem) {
-			if(!(obj.getType() == TabExtended.intType || obj.getType() == TabExtended.enumType || obj.getType() == TabExtended.boolType || obj.getType() == TabExtended.charType)) {
+			if(!(obj.getType() == TabExtended.intType || obj.getType() == TabExtended.boolType || obj.getType() == TabExtended.charType)) {
 				report_error("Designator nije tipa int, char ili bool. Greska", statement);
 			}
 		}
@@ -582,7 +606,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public void visit(PrintStatement statement) {
 		Struct struct = statement.getExpr().struct;
-		if(!(struct == TabExtended.intType || struct == TabExtended.enumType || struct == TabExtended.boolType || struct == TabExtended.charType)) {
+		if(!(struct == TabExtended.intType ||struct == TabExtended.boolType || struct == TabExtended.charType)) {
 			report_error("Designator nije tipa int, char ili bool. Greska", statement);
 		}
 	}
@@ -637,7 +661,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(AssignopDesignatorStatement des) {
 		
 		Obj obj = des.getDesignatorStatementName().getDesignator().obj;
-		
+
+		if(obj.getKind() == Obj.Con) {
+			des.struct = TabExtended.noType;
+			report_error("Konstanta " + obj.getName() + " ne moze biti leva strana dodele. Greska", des);
+			return;
+		}
+
+		if(obj.getKind() == Obj.Meth) {
+			des.struct = TabExtended.noType;
+			report_error("Metoda " + obj.getName() + " ne moze biti leva strana dodele. Greska", des);
+			return;
+		}
+
 		if(obj.getKind() == Obj.Var || obj.getKind() == Obj.Fld || obj.getKind() == Obj.Elem) {
 			if(des.getExpr().struct.assignableTo(obj.getType())) {
 				des.struct = obj.getType();
@@ -656,7 +692,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(PlusPlusDesignatorStatement des) {
 		Obj obj = des.getDesignatorStatementName().getDesignator().obj;
 		if(obj.getKind() == Obj.Var || obj.getKind() == Obj.Fld || obj.getKind() == Obj.Elem) {
-			if(obj.getType() == TabExtended.intType || obj.getType() == TabExtended.enumType) {
+			if(obj.getType() == TabExtended.intType) {
 				des.struct = obj.getType();
 			}
 			else {
@@ -673,7 +709,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(MinusMinusDesignatorStatement des) {
 		Obj obj = des.getDesignatorStatementName().getDesignator().obj;
 		if(obj.getKind() == Obj.Var || obj.getKind() == Obj.Fld || obj.getKind() == Obj.Elem) {
-			if(obj.getType() == TabExtended.intType || obj.getType() == TabExtended.enumType) {
+			if(obj.getType() == TabExtended.intType) {
 				des.struct = obj.getType();
 			}
 			else {
@@ -1072,6 +1108,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}//TODO dodatno proveri jel treba da se postavi u addr mozda pozicija u okviru niza
 		
 	}
+
+	public void visit(ErrorVarDeclElem elem) {}
+	public void visit(ErrorLastVarDeclElem elem) {}
+	public void visit(ErrorFormParsElem elem) {}
+	public void visit(ErrorLastFormParsElem elem) {}
+	public void visit(ErrorDesignatorStatement stmt) {}
+	public void visit(ErrorIfBlockStart stmt) {}
 	
     public boolean passed() {
     	return !errorDetected;
