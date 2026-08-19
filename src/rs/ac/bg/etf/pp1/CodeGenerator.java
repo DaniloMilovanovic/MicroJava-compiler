@@ -6,6 +6,11 @@ import rs.etf.pp1.symboltable.Tab;
 import rs.etf.pp1.symboltable.concepts.Obj;
 import rs.etf.pp1.symboltable.concepts.Struct;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class CodeGenerator extends VisitorAdaptor {
 
     private int mainPc = -1;
@@ -13,296 +18,182 @@ public class CodeGenerator extends VisitorAdaptor {
     private int paramsCount = 0;
     private int localsCount = 0;
 
-    public int getMainPc() {
+    int getMainPc(){
         return mainPc;
     }
 
-    // ==================== PROGRAM ====================
-
-    @Override
-    public void visit(Program program) {
-        // Count global variables for data size
-        int globalVarCount = 0;
-        for (Obj obj : program.getProgName().obj.getLocalSymbols()) {
-            if (obj.getKind() == Obj.Var) {
-                globalVarCount++;
+    public void visit(Program p){
+        int dataSize = 0;
+        Obj pObj = p.getProgName().obj;
+        for(Obj obj: pObj.getLocalSymbols()){
+            if(obj.getKind() == Obj.Var){
+                dataSize++;
             }
         }
-        Code.dataSize = globalVarCount;
+        Code.dataSize = dataSize;
     }
 
-    // ==================== METHOD DECLARATION ====================
+    //METHODS
+    public void visit(TMethodDecl mDecl){
 
-    @Override
-    public void visit(TMethodDecl methodDecl) {
-        currentMethod = methodDecl.obj;
-        paramsCount = methodDecl.obj.getLevel();
-        localsCount = methodDecl.obj.getLocalSymbols().size();
+        paramsCount = mDecl.obj.getLevel();
+        localsCount = mDecl.obj.getLocalSymbols().size() - paramsCount;
+        currentMethod = mDecl.obj;
+        currentMethod.setAdr(Code.pc);
 
-        methodDecl.obj.setAdr(Code.pc);
-
-        if (methodDecl.getName().equals("main")) {
-            mainPc = Code.pc;
-        }
-
-        // Emit enter with params and locals
         Code.put(Code.enter);
         Code.put(paramsCount);
         Code.put(localsCount);
     }
 
-    @Override
-    public void visit(VMethodDecl methodDecl) {
-        currentMethod = methodDecl.obj;
-        paramsCount = methodDecl.obj.getLevel();
-        localsCount = methodDecl.obj.getLocalSymbols().size();
-
-        methodDecl.obj.setAdr(Code.pc);
-
-        if (methodDecl.getName().equals("main")) {
+    public void visit(VMethodDecl mDecl){
+        if(mDecl.getName().equals("main")){
             mainPc = Code.pc;
         }
+        paramsCount = mDecl.obj.getLevel();
+        localsCount = mDecl.obj.getLocalSymbols().size() - paramsCount;
+        currentMethod = mDecl.obj;
+        currentMethod.setAdr(Code.pc);
 
-        // Emit enter with params and locals
         Code.put(Code.enter);
         Code.put(paramsCount);
         Code.put(localsCount);
     }
 
-    @Override
-    public void visit(MethodDecl methodDecl) {
-        // Called AFTER body is visited (bottom-up traversal)
-        // Emit exit and return
+    public void visit(MethodDecl mDecl){
         Code.put(Code.exit);
         Code.put(Code.return_);
-
         currentMethod = null;
     }
 
-    // ==================== RETURN ====================
+    //STATEMENTS
+    public void visit(PrintStatement printStatement){
 
-    @Override
-    public void visit(ReturnStatement returnStatement) {
-        Code.put(Code.exit);
-        Code.put(Code.return_);
+        int kind = printStatement.getExpr().struct.getKind();
+
+        if(kind == Struct.Int || kind == Struct.Bool){
+            Code.loadConst(0);
+            Code.put(Code.print);
+        }
+        else if(kind == Struct.Char){
+            Code.loadConst(1);
+            Code.put(Code.bprint);
+        }
     }
 
-    @Override
-    public void visit(ReturnValueStatement returnValueStatement) {
-        // Expr value is on stack - leave it there as return value
-        Code.put(Code.exit);
-        Code.put(Code.return_);
+    public void visit(NumConstPrintStatement printStatement){
+
+        Code.loadConst(printStatement.getNumConst().getVal());
+        int kind = printStatement.getExpr().struct.getKind();
+
+        if(kind == Struct.Int || kind == Struct.Bool){
+            Code.put(Code.print);
+        }
+        else if(printStatement.getExpr().struct.getKind() == Struct.Char){
+            Code.put(Code.bprint);
+        }
     }
 
-    // ==================== CONSTANTS ====================
-
-    @Override
-    public void visit(NumConst numConst) {
-        Code.loadConst(numConst.getVal());
+    public void visit(ReadStatement readStatement){
+        Obj obj = readStatement.getDesignator().obj;
+        if(obj.getType().getKind() == Struct.Char){
+            Code.put(Code.bread);
+            Code.store(obj);
+        }
+        else{
+            Code.put(Code.read);
+            Code.store(obj);
+        }
     }
 
-    @Override
-    public void visit(CharConst charConst) {
-        Code.loadConst(charConst.getVal());
+    //DESIGNATOR
+    public void visit(BaseDesignator baseDesignator){
+        Code.load(baseDesignator.obj);
     }
 
-    @Override
-    public void visit(TrueBoolConst boolConst) {
+    public void visit(AssignopDesignatorStatement node){
+        Code.store(node.getDesignatorStatementName().getDesignator().obj);
+    }
+
+    public void visit(PlusPlusDesignatorStatement node){
+        Obj obj = node.getDesignatorStatementName().getDesignator().obj;
+
+        Code.load(obj);
         Code.loadConst(1);
+        Code.put(Code.add);
+        Code.store(obj);
     }
 
-    @Override
-    public void visit(FalseBoolConst boolConst) {
-        Code.loadConst(0);
+    public void visit(MinusMinusDesignatorStatement node){
+        Obj obj = node.getDesignatorStatementName().getDesignator().obj;
+
+        Code.load(obj);
+        Code.loadConst(1);
+        Code.put(Code.sub);
+        Code.store(obj);
     }
 
-    // ==================== DESIGNATORS ====================
-
-    @Override
-    public void visit(BaseDesignator designator) {
-        // Load variable or constant
-        Code.load(designator.obj);
+    //EXPRESSIONS
+    public void visit(MinusExpr minusExpr){
+        Code.put(Code.neg);
     }
 
-    @Override
-    public void visit(DesignatorFactor designatorFactor) {
-        // Designator is already visited (value on stack)
-        // Nothing to do here
+    public void visit(HasTermList hasTermList){
+        if(hasTermList.getAddop() instanceof AddopMinus){
+            Code.put(Code.sub);
+        }
+        else if(hasTermList.getAddop() instanceof AddopPlus){
+            Code.put(Code.add);
+        }
     }
 
-    // ==================== ARITHMETIC ====================
+    public void visit(MiddleTerm middleTerm){
 
-    @Override
-    public void visit(MiddleTerm term) {
-        // Stack: term_value, factor_value
-        if (term.getMulop() instanceof MulopStar) {
+        if(middleTerm.getMulop() instanceof  MulopStar){
             Code.put(Code.mul);
         }
-        else if (term.getMulop() instanceof MulopDiv) {
+        else if(middleTerm.getMulop() instanceof  MulopDiv){
             Code.put(Code.div);
         }
-        else if (term.getMulop() instanceof MulopMod) {
+        else if(middleTerm.getMulop() instanceof MulopMod){
             Code.put(Code.rem);
         }
     }
 
-    @Override
-    public void visit(HasTermList termList) {
-        // Stack: termList_value, term_value
-        if (termList.getAddop() instanceof AddopPlus) {
-            Code.put(Code.add);
-        }
-        else if (termList.getAddop() instanceof AddopMinus) {
-            Code.put(Code.sub);
-        }
+
+    public void visit(DesignatorFactor designatorFactor){
+        //Value already loaded in Designator;
     }
 
-    @Override
-    public void visit(MinusExpr minusExpr) {
-        // Stack: value
-        Code.put(Code.neg);
+    public void visit(BoolFactor boolFactor){
+        //Value already loaded in BoolConst;
     }
 
-    // ==================== ASSIGNMENT ====================
-
-    @Override
-    public void visit(AssignopDesignatorStatement assign) {
-        // Expr value is on stack
-        // Store to designator
-        Designator des = assign.getDesignatorStatementName().getDesignator();
-
-        if (des instanceof BaseDesignator) {
-            BaseDesignator baseDes = (BaseDesignator) des;
-            Code.store(baseDes.obj);
-        }
-        // Array assignment will be added later
+    public void visit(NumFactor numFactor){
+        //Value already loaded in NumConst;
     }
 
-    // ==================== INCREMENT/DECREMENT ====================
-
-    @Override
-    public void visit(PlusPlusDesignatorStatement plusPlus) {
-        Designator des = plusPlus.getDesignatorStatementName().getDesignator();
-
-        if (des instanceof BaseDesignator) {
-            BaseDesignator baseDes = (BaseDesignator) des;
-            Code.load(baseDes.obj);
-            Code.loadConst(1);
-            Code.put(Code.add);
-            Code.store(baseDes.obj);
-        }
+    public void visit(CharFactor charFactor){
+        //Value already loaded in CharConst;
     }
 
-    @Override
-    public void visit(MinusMinusDesignatorStatement minusMinus) {
-        Designator des = minusMinus.getDesignatorStatementName().getDesignator();
-
-        if (des instanceof BaseDesignator) {
-            BaseDesignator baseDes = (BaseDesignator) des;
-            Code.load(baseDes.obj);
-            Code.loadConst(1);
-            Code.put(Code.sub);
-            Code.store(baseDes.obj);
-        }
+    public void visit(NumConst numConst){
+        Code.loadConst(numConst.getVal());
     }
 
-    // ==================== PRINT ====================
-
-    @Override
-    public void visit(PrintStatement printStatement) {
-        // Expr value is on stack
-        Struct type = printStatement.getExpr().struct;
-
-        if (type == TabExtended.charType) {
-            Code.loadConst(1);  // width for char
-            Code.put(Code.bprint);
-        }
-        else {
-            Code.loadConst(5);  // width for int/bool
-            Code.put(Code.print);
-        }
+    public void visit(CharConst charConst){
+        Code.loadConst(charConst.getVal());
     }
 
-    // ==================== PASS-THROUGH NODES ====================
-    // These don't need code generation - traversal handles them
-
-    @Override
-    public void visit(NoTExpr expr) {
-        // No code - NoTernaryExpr is already visited
+    public void visit(TrueBoolConst trueBoolConst){
+        Code.loadConst(1);
     }
 
-    @Override
-    public void visit(NoMinusExpr expr) {
-        // No code - TermList is already visited
+    public void visit(FalseBoolConst falseBoolConst){
+        Code.loadConst(0);
     }
 
-    @Override
-    public void visit(NoTermList termList) {
-        // No code - Term is already visited
-    }
 
-    @Override
-    public void visit(LastTerm term) {
-        // No code - Factor is already visited
-    }
 
-    @Override
-    public void visit(NumFactor numFactor) {
-        // No code - NumConst is already visited
-    }
-
-    @Override
-    public void visit(CharFactor charFactor) {
-        // No code - CharConst is already visited
-    }
-
-    @Override
-    public void visit(BoolFactor boolFactor) {
-        // No code - BoolConst is already visited
-    }
-
-    @Override
-    public void visit(ExprFactor exprFactor) {
-        // No code - Expr is already visited
-    }
-
-    @Override
-    public void visit(DesignatorStatementName name) {
-        // No code - Designator is already visited
-    }
-
-    @Override
-    public void visit(Assignop assignop) {
-        // No code - '=' is just a token
-    }
-
-    @Override
-    public void visit(AddopPlus addop) {
-        // No code - handled in HasTermList
-    }
-
-    @Override
-    public void visit(AddopMinus addop) {
-        // No code - handled in HasTermList
-    }
-
-    @Override
-    public void visit(MulopStar mulop) {
-        // No code - handled in MiddleTerm
-    }
-
-    @Override
-    public void visit(MulopDiv mulop) {
-        // No code - handled in MiddleTerm
-    }
-
-    @Override
-    public void visit(MulopMod mulop) {
-        // No code - handled in MiddleTerm
-    }
-
-    @Override
-    public void visit(Type type) {
-        // No code - resolved during semantic analysis
-    }
+    //CONDITION
 }

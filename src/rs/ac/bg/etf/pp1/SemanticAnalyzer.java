@@ -524,6 +524,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Designator nije tipa int, char ili bool. Greska", statement);
 		}
 	}
+
+	public void visit(NumConstPrintStatement statement) {
+		Struct struct = statement.getExpr().struct;
+		if(!(struct == TabExtended.intType || struct == TabExtended.boolType || struct == TabExtended.charType)) {
+			report_error("Designator nije tipa int, char ili bool. Greska", statement);
+		}
+	}
 	
 	public void visit(HasIfBlockStart statement) {
 		if(statement.getCondition().struct != TabExtended.boolType) {
@@ -975,10 +982,21 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Designator " + des.getBaseName() + " nije niz. Greska", des);
 			des.obj = TabExtended.noObj;
 		}
-		else {
+		else{
 			report_info("Pretraga prilikom obrade designatora. Info", des, obj);
 
 			PeriodElem elem = des.getPeriodElem();
+
+			if(elem instanceof FindAnyPeriodElem || elem instanceof MapPeriodElem){
+				Struct elemType = obj.getType().getElemType();
+				if(elemType != TabExtended.intType &&
+						elemType != TabExtended.charType &&
+						elemType != TabExtended.boolType) {
+					report_error("Niz " + des.getBaseName() + " nije ugrađenog tipa. Greska", des);
+					des.obj = TabExtended.noObj;
+					return;
+				}
+			}
 
 			if(elem instanceof LenPeriodElem){
 				// .length → int constant
@@ -990,7 +1008,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				Struct elemType = obj.getType().getElemType();
 				Struct exprType = findAny.getExpr().struct;
 
-				if(!exprType.compatibleWith(elemType)) {
+				if(!exprType.compatibleWith(elemType)){
 					report_error("Expr nije kompatibilan sa tipom elemenata niza. Greska", findAny);
 				}
 				des.obj = new Obj(Obj.Con, des.getBaseName() + ".findAny", TabExtended.boolType);
@@ -1000,20 +1018,18 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				MapPeriodElem mapElem = (MapPeriodElem) elem;
 				Struct elemType = obj.getType().getElemType();
 
-				// Check ident using getI1()
 				Obj identObj = TabExtended.find(mapElem.getMapElem());
 				if(identObj != TabExtended.noObj) {
-					if(!identObj.getType().compatibleWith(elemType)) {
+					if(!identObj.getType().compatibleWith(elemType)){
 						report_error("Identifikator " + mapElem.getMapElem() + " nije istog tipa kao elementi niza. Greska", mapElem);
 					}
-					else {
+					else{
 						report_info("Pretraga prilikom obrade map identifikatora. Info", mapElem, identObj);
 					}
 				}
 
-				// Check Expr
 				Struct exprType = mapElem.getExpr().struct;
-				if(!exprType.compatibleWith(elemType)) {
+				if(!exprType.compatibleWith(elemType)){
 					report_error("Expr nije kompatibilan sa tipom elemenata niza. Greska", mapElem);
 				}
 
