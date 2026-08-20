@@ -86,7 +86,7 @@ nonterminal FactorList;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Factor, ActParsFactor,  FactorName;
 
 nonterminal DesignatorName;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem, PeriodElem;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem, PeriodElem, ArrayDesignatorName;
 
 nonterminal Assignop, Relop, Addop, Mulop;
 
@@ -310,14 +310,9 @@ Expr ::= (NoTExpr) NoTernaryExpr
 		 (HasTExpr) HasTernaryExpr
 		 ;
 
-NoTernaryExpr ::= (MinusExpr) MINUS TermList
-				  |
-				  (NoMinusExpr) TermList
-				  ;
-				  
 HasTernaryExpr ::= (TernaryExpr) Condition QMARK NoTernaryExpr COLON Expr;
 
-
+NoTernaryExpr ::= (NoTernaryExpr) TermList;
 
 Term ::= (MiddleTerm) Term:t Mulop Factor:f
 		 |
@@ -327,6 +322,8 @@ Term ::= (MiddleTerm) Term:t Mulop Factor:f
 TermList ::= (HasTermList) TermList Addop Term
 			 |
 			 (NoTermList) Term
+			 |
+			 (MinusNoTermList) MINUS Term
 			 ;
 
 
@@ -354,8 +351,10 @@ Designator ::= (BaseDesignator) IDENT:baseName
 			   |
 			   (PeriodDesignator) IDENT:baseName PERIOD PeriodElem
 			   |
-			   (ArrayDesignator) IDENT:baseName LBRACK Expr RBRACK
+			   (ArrayDesignator) ArrayDesignatorName LBRACK Expr RBRACK
 			   ;
+
+ArrayDesignatorName ::= (ArrayDesignatorName) IDENT:baseName;
 
 PeriodElem ::= (LenPeriodElem) LEN
 			   |

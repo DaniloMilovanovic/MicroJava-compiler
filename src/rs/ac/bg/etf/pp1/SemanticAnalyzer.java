@@ -762,18 +762,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(HasTExpr expr) {// Ovo je Expr
 		expr.struct = expr.getHasTernaryExpr().struct;
 	}
-	
-	public void visit(MinusExpr expr) {
-		if(expr.getTermList().struct != TabExtended.intType) {
-			expr.struct = TabExtended.noType;
-			report_error("TermList nije tipa int. Greska", expr);
-		}
-		else {
-			expr.struct = TabExtended.intType;	
-		}
-	}
-	
-	public void visit(NoMinusExpr expr) {
+
+	public void visit(NoTernaryExpr expr) {
+
 		expr.struct = expr.getTermList().struct;
 	}
 	
@@ -795,7 +786,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(NoTermList termList) {
 		termList.struct = termList.getTerm().struct;
 	}
-	
+
+
+	public void visit(MinusNoTermList termList) {
+		if(termList.getTerm().struct != TabExtended.intType) {
+			termList.struct = TabExtended.noType;
+			report_error("Term nije tipa int. Greska", termList);
+		}
+		else {
+			termList.struct = TabExtended.intType;
+		}
+	}
+
+
 	public void visit(TernaryExpr expr) {
 		
 		if(expr.getNoTernaryExpr().struct.equals(expr.getExpr().struct)){
@@ -947,28 +950,34 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 
-	
-	public void visit(ArrayDesignator des) {
-		Obj obj = TabExtended.find(des.getBaseName());
-		
-		if(des.obj != TabExtended.noObj) report_info("Pretraga prilikom obrade designatora niza. Info", des, des.obj);
-		
-		if(obj == TabExtended.noObj) {// Provera da li postoji designator u tabeli simbola
-			report_error("Designator " + des.getBaseName() + " nije deklarisan. Greska", des);
-			des.obj = TabExtended.noObj;
-		} 
-		else if(obj.getType().getKind() != Struct.Array) {// Provera da li je simbol niz
-			report_error("Designator " + obj.getName()  + " nije niz. Greska", des);
+	public void visit(ArrayDesignatorName node){
+		Obj arrayObj = TabExtended.find(node.getBaseName());
+		node.obj = arrayObj;   // Store the array's Obj
+
+		if(arrayObj == TabExtended.noObj){
+			report_error("Designator " + node.getBaseName() + " nije deklarisan. Greska", node);
+		}
+		else if(arrayObj.getType().getKind() != Struct.Array){
+			report_error("Designator " + node.getBaseName() + " nije niz. Greska", node);
+			node.obj = TabExtended.noObj;
+		}
+	}
+
+	public void visit(ArrayDesignator des){
+
+		Obj arrayObj = des.getArrayDesignatorName().obj;
+
+		if(arrayObj == TabExtended.noObj){
+			// Array was not found or not an array
 			des.obj = TabExtended.noObj;
 		}
-		else if (des.getExpr().struct != TabExtended.intType) {// Izraz nije int
+		else if(des.getExpr().struct != TabExtended.intType){
 			report_error("Izraz u okviru [] nije tipa int. Greska", des);
 			des.obj = TabExtended.noObj;
 		}
-		else {
-			des.obj = new Obj(Obj.Elem, des.getBaseName(), obj.getType().getElemType()); //Element tipa Elem, isto ime kao niz, struct je tip niza
-		}//TODO dodatno proveri jel treba da se postavi u addr mozda pozicija u okviru niza
-		
+		else{
+			des.obj = new Obj(Obj.Elem, des.getArrayDesignatorName().getBaseName(),arrayObj.getType().getElemType());
+		}
 	}
 
 	public void visit(PeriodDesignator des){
@@ -1001,6 +1010,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			if(elem instanceof LenPeriodElem){
 				// .length → int constant
 				des.obj = new Obj(Obj.Con, des.getBaseName() + ".length", TabExtended.intType);
+				elem.obj = obj;
 				report_info("Pristup duzini niza " + des.getBaseName() + ". Info", des, des.obj);
 			}
 			else if(elem instanceof FindAnyPeriodElem){
