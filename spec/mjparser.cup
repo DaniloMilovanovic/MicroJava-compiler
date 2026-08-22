@@ -69,7 +69,8 @@ nonterminal rs.etf.pp1.symboltable.concepts.Obj TypeMethodDecl;
 
 nonterminal FormPars, FormParsElem, LastFormParsElem, FormParsElemList;
 
-nonterminal Statement, StatementList, ForLoopBegin, ForLoopFirstParam, ForLoopSecondParam, ForLoopThirdParam, IfBlockStart, ElseKeyword, IfCreatePatchingStacks;
+nonterminal Statement, StatementList, ForLoopBegin, ForLoopFirstParam, ForLoopSecondParam, ForLoopThirdParam, IfBlockStart, ElseKeyword;
+nonterminal ForLoopConditionBegin, ForLoopUpdateBegin, ForLoopBodyBegin;
 
 nonterminal DesignatorStatementName;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct DesignatorStatement;
@@ -238,20 +239,19 @@ Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  |
 			  (PrintStatement) PRINT LPAREN Expr RPAREN SEMI
 			  |
-			  (ForStatement) ForLoopBegin ForLoopFirstParam SEMI ForLoopSecondParam SEMI ForLoopThirdParam RPAREN Statement
+			  (ForStatement) ForLoopBegin ForLoopFirstParam ForLoopConditionBegin ForLoopSecondParam ForLoopUpdateBegin ForLoopThirdParam ForLoopBodyBegin Statement
 			  |
 			  (StatementListStatement) LBRACE StatementList RBRACE
 			  ;
 
 ElseKeyword ::= (ElseKeyword) ELSE;
 
-IfBlockStart ::= (HasIfBlockStart) IfCreatePatchingStacks LPAREN Condition RPAREN
+IfBlockStart ::= (HasIfBlockStart) IF LPAREN Condition RPAREN
 				 |
-				 (ErrorIfBlockStart) IfCreatePatchingStacks LPAREN error:l RPAREN
+				 (ErrorIfBlockStart) IF LPAREN error:l RPAREN
 				 {: parser.report_error("Izvrsen IfBlock oporavak do ) u liniji " + lleft, null); :}
 				 ;
 
-IfCreatePatchingStacks ::= (IfCreatePatchingStacks) IF;
 
 ForLoopBegin ::= (ForLoopBegin) FOR LPAREN;
 ForLoopFirstParam ::= (HasForFirstParam) DesignatorStatement
@@ -259,15 +259,21 @@ ForLoopFirstParam ::= (HasForFirstParam) DesignatorStatement
 					   (NoForFirstParam) /* epsilon */
 					   ;
 
+ForLoopConditionBegin ::= (ForLoopConditionBegin) SEMI;
+
 ForLoopSecondParam ::= (HasForSecondParam) Condition
 					  |
 					  (NoForSecondParam) /* epsilon */
 					  ;
 
+ForLoopUpdateBegin ::= (ForLoopUpdateBegin) SEMI;
+
 ForLoopThirdParam ::= (HasForThirdParam) DesignatorStatement
 					   |
 					   (NoForThirdParam) /* epsilon */
 					   ;
+
+ForLoopBodyBegin ::= (ForLoopBodyBegin) RPAREN;
 
 StatementList ::= (HasStatementList) StatementList Statement
 				  |

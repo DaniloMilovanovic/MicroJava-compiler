@@ -6,9 +6,7 @@ import rs.etf.pp1.symboltable.Tab;
 import rs.etf.pp1.symboltable.concepts.Obj;
 import rs.etf.pp1.symboltable.concepts.Struct;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 public class CodeGenerator extends VisitorAdaptor {
 
@@ -17,10 +15,35 @@ public class CodeGenerator extends VisitorAdaptor {
     private int paramsCount = 0;
     private int localsCount = 0;
 
-    private Stack<List<Integer>> trueJumpStack = new Stack<List<Integer>>();
-    private Stack<List<Integer>> falseJumpStack = new Stack<List<Integer>>();
-    private Stack<Integer> endIfStack = new Stack<Integer>();
-    private Stack<Integer> endTernaryStack = new Stack<Integer>();
+    private Map<SyntaxNode, List<Integer>> falseJumps = new HashMap<SyntaxNode, List<Integer>>();
+    private Map<SyntaxNode, List<Integer>> trueJumps = new HashMap<SyntaxNode, List<Integer>>();
+    private Map<SyntaxNode, List<Integer>> endJumps = new HashMap<SyntaxNode, List<Integer>>();
+
+    private Stack<ForStatement> currentForLoop = new Stack<ForStatement>();
+
+    private Map<SyntaxNode, Integer> forLoopCondition = new HashMap<SyntaxNode, Integer>();
+    private Map<SyntaxNode, Integer> forLoopUpdate = new HashMap<SyntaxNode, Integer>();
+    private Map<SyntaxNode, List<Integer>> forLoopBreaks = new HashMap<SyntaxNode, List<Integer>>();
+
+
+
+    private List<Integer> getListForNode(Map<SyntaxNode, List<Integer>> m, SyntaxNode n) {
+        List<Integer> l = m.get(n);
+        if (l == null) { l = new ArrayList<Integer>(); m.put(n, l); }
+        return l;
+    }
+
+    private void fixAllForNode(Map<SyntaxNode, List<Integer>> m, SyntaxNode n) {
+        List<Integer> addresses = getListForNode(m, n);
+        for (int adr : addresses) Code.fixup(adr);
+        getListForNode(m, n).clear();
+    }
+
+    private void moveList(Map<SyntaxNode, List<Integer>> srcMap, SyntaxNode srcNode,
+                          Map<SyntaxNode, List<Integer>> dstMap, SyntaxNode dstNode){
+        getListForNode(dstMap, dstNode).addAll(getListForNode(srcMap, srcNode));
+        getListForNode(srcMap, srcNode).clear();
+    }
 
     int getMainPc() {
         return mainPc;
@@ -342,16 +365,11 @@ public class CodeGenerator extends VisitorAdaptor {
 
     //CONDITION
 
-    public void visit(IfCreatePatchingStacks node){
-        trueJumpStack.push(new ArrayList<>());
-        falseJumpStack.push(new ArrayList<>());
-    }
-
     public void visit(ExprCondFact node){
         Code.loadConst(1);
         Code.putFalseJump(Code.eq, 0);
 
-        falseJumpStack.peek().add(Code.pc - 2);
+        getListForNode(falseJumps, node).add(Code.pc - 2);
     }
 
     public void visit(RelopCondFact node){
@@ -374,58 +392,187 @@ public class CodeGenerator extends VisitorAdaptor {
             Code.putFalseJump(Code.gt, 0);
         }
 
-        falseJumpStack.peek().add(Code.pc - 2);
+        getListForNode(falseJumps, node).add(Code.pc - 2);
+    }
+
+    public void visit(LastCondTerm node){
+        SyntaxNode child = node.getCondFact();
+        moveList(falseJumps, child, falseJumps, node);
+        moveList(trueJumps, child, trueJumps, node);
+    }
+
+    public void visit(MiddleCondTerm node){
+
+        SyntaxNode childLeft = node.getCondTerm();
+        SyntaxNode childRight = node.getCondFact();
+
+        moveList(falseJumps, childLeft, falseJumps, node);
+        moveList(trueJumps, childLeft, trueJumps, node);
+
+        moveList(falseJumps, childRight, falseJumps, node);
+        moveList(trueJumps, childRight, trueJumps, node);
     }
 
     public void visit(OrOperation node){
         Code.putJump(0);
-        trueJumpStack.peek().add(Code.pc - 2);
-        List<Integer> elems = falseJumpStack.peek();
+        getListForNode(trueJumps, node).add(Code.pc - 2);
 
-        for(int elem: elems){
-            Code.fixup(elem);
-        }
-        elems.clear();
+        MiddleCondition parent = (MiddleCondition)node.getParent();
+        SyntaxNode leftConditions = parent.getCondition();
+
+        fixAllForNode(falseJumps, leftConditions);
     }
 
+    public void visit(LastCondition node){
+        SyntaxNode child = node.getCondTerm();
+
+        moveList(falseJumps, child, falseJumps, node);
+        moveList(trueJumps, child, trueJumps, node);
+    }
+
+    public void visit(MiddleCondition node){
+
+        SyntaxNode childLeft = node.getCondition();
+        SyntaxNode childMiddle = node.getOrOperation();
+        SyntaxNode childRight = node.getCondTerm();
+
+        moveList(falseJumps, childLeft, falseJumps, node);
+        moveList(trueJumps, childLeft, trueJumps, node);
+
+        moveList(falseJumps, childMiddle, falseJumps, node);
+        moveList(trueJumps, childMiddle, trueJumps, node);
+
+        moveList(falseJumps, childRight, falseJumps, node);
+        moveList(trueJumps, childRight, trueJumps, node);
+
+    }
+
+    //IF ELSE EXPRESSION
+
     public void visit(HasIfBlockStart node){
-        List<Integer> elems = trueJumpStack.peek();
-        for(int elem: elems){
-            Code.fixup(elem);
-        }
-        elems.clear();
+        SyntaxNode condition = node.getCondition();
+        SyntaxNode parent = node.getParent();
+        fixAllForNode(trueJumps, condition);
+
+        moveList(falseJumps, condition, falseJumps, parent);
+        moveList(trueJumps, condition, trueJumps, parent);
     }
 
     public void visit(ElseKeyword node){
         Code.putJump(0);
-        endIfStack.push(Code.pc - 2);
-        List<Integer> elems = falseJumpStack.peek();
-        for(int elem: elems){
-            Code.fixup(elem);
-        }
-        elems.clear();
+
+        getListForNode(endJumps, node).add(Code.pc - 2);
+
+        SyntaxNode parent = node.getParent();
+        fixAllForNode(falseJumps, parent);
     }
 
 
     //No else keyword
     public void visit(IfStatement node){
-
-        List<Integer> elems = falseJumpStack.pop();
-        for(int elem: elems){
-            Code.fixup(elem);
-        }
-        elems.clear();
-
-        trueJumpStack.pop();
+        fixAllForNode(falseJumps, node);
     }
 
     public void visit(IfElseStatement node){
-
-        int endAddrFixup = endIfStack.pop();
-        Code.fixup(endAddrFixup);
-
-        falseJumpStack.pop();
-        trueJumpStack.pop();
+        SyntaxNode elseKeyword = node.getElseKeyword();
+        fixAllForNode(endJumps, elseKeyword);
     }
-    
+
+    //TERNARY
+
+    public void visit(TernaryExprFirst node){
+        TernaryExpr parent = (TernaryExpr) node.getParent();
+        SyntaxNode condition = parent.getCondition();
+
+        fixAllForNode(trueJumps, condition);
+    }
+
+    public void visit(TernaryExprSecond node){
+        Code.putJump(0);
+        getListForNode(endJumps, node).add(Code.pc - 2);
+
+        TernaryExpr parent = (TernaryExpr) node.getParent();
+        SyntaxNode condition = parent.getCondition();
+
+        fixAllForNode(falseJumps, condition);
+    }
+
+    public void visit(TernaryExpr node){
+        SyntaxNode semicolon = node.getTernaryExprSecond();
+        fixAllForNode(endJumps, semicolon);
+    }
+
+    //For loop
+
+    public void visit(ForLoopBegin node){
+        currentForLoop.push((ForStatement)node.getParent());//push the current for loop node to the stack
+    }
+
+    public void visit(ForLoopConditionBegin node){
+        forLoopCondition.put(currentForLoop.peek(), Code.pc);//remember condition address for end of update
+    }
+
+    public void visit(HasForSecondParam node){
+        Condition condition = ((HasForSecondParam) node).getCondition();
+        moveList(trueJumps, condition, trueJumps, node);
+        moveList(falseJumps, condition, falseJumps, node);
+
+        Code.putJump(0);//jump from condition to body execution
+        getListForNode(trueJumps, node).add(Code.pc - 2);
+    }
+
+    public void visit(NoForSecondParam node){
+        Code.putJump(0);//jump from condition to body execution
+        getListForNode(trueJumps, node).add(Code.pc - 2);
+    }
+
+    public void visit(ForLoopUpdateBegin node){
+        forLoopUpdate.put(currentForLoop.peek(), Code.pc);//remember address for end of body execution
+    }
+
+    public void visit(ForLoopBodyBegin node){
+        ForStatement parent = currentForLoop.peek();
+        SyntaxNode condition = parent.getForLoopSecondParam();
+
+        int addr = forLoopCondition.get(parent);//set the update to go to condition
+        Code.putJump(addr);
+
+        fixAllForNode(trueJumps, condition);//set the true jumps to go to body execution
+    }
+
+    public void visit(ForStatement node){
+        SyntaxNode forLoopUpdateBegin = node.getForLoopUpdateBegin();
+        SyntaxNode condition = node.getForLoopSecondParam();
+
+        int addr = forLoopUpdate.get(node);
+        Code.putJump(addr);
+
+
+        fixAllForNode(falseJumps, condition);//set all the false jumps to exit
+        fixAllForNode(forLoopBreaks, node);//Set the exit for all the break statements
+
+        currentForLoop.pop();
+    }
+
+    public void visit(BreakStatement node){
+        Code.putJump(0);
+        getListForNode(forLoopBreaks, currentForLoop.peek()).add(Code.pc - 2);
+    }
+
+    public void visit(ContinueStatement node){
+        int addr = forLoopUpdate.get(currentForLoop.peek());
+        Code.putJump(addr);
+    }
 }
+/*
+ForLoopBegin ForLoopFirstParam ForLoopConditionBegin ForLoopSecondParam ForLoopUpdateBegin
+ForLoopThirdParam ForLoopBodyBegin Statement
+
+
+continue skace na ForLoopUpdateBegin
+break skace na kraj petlje
+
+kraj petlje skace na ForLoopUpdateBegin
+trueJumps skacu na ForLoopBodyBegin
+falseJumps skacu na kraj petlje
+ */
