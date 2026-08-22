@@ -69,7 +69,7 @@ nonterminal rs.etf.pp1.symboltable.concepts.Obj TypeMethodDecl;
 
 nonterminal FormPars, FormParsElem, LastFormParsElem, FormParsElemList;
 
-nonterminal Statement, StatementList, ForLoopBegin, ForLoopFirstParam, ForLoopSecondParam, ForLoopThirdParam, IfBlockStart;
+nonterminal Statement, StatementList, ForLoopBegin, ForLoopFirstParam, ForLoopSecondParam, ForLoopThirdParam, IfBlockStart, ElseKeyword, IfCreatePatchingStacks;
 
 nonterminal DesignatorStatementName;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct DesignatorStatement;
@@ -77,8 +77,11 @@ nonterminal rs.etf.pp1.symboltable.concepts.Struct DesignatorStatement;
 nonterminal ActPars;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTerm, CondFact;
+nonterminal OrOperation;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, NoTernaryExpr, HasTernaryExpr;
+
+nonterminal TernaryExprFirst, TernaryExprSecond;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Term, TermList;
 
@@ -217,7 +220,7 @@ FormParsElemList ::= (HasFormParsElem) FormParsElem FormParsElemList
 
 Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  |
-			  (IfElseStatement) IfBlockStart Statement ELSE Statement
+			  (IfElseStatement) IfBlockStart Statement ElseKeyword Statement
 			  |
 			  (IfStatement) IfBlockStart Statement
 			  |
@@ -240,11 +243,15 @@ Statement ::= (DesignatorStatementStatement) DesignatorStatement SEMI
 			  (StatementListStatement) LBRACE StatementList RBRACE
 			  ;
 
-IfBlockStart ::= (HasIfBlockStart) IF LPAREN Condition RPAREN
+ElseKeyword ::= (ElseKeyword) ELSE;
+
+IfBlockStart ::= (HasIfBlockStart) IfCreatePatchingStacks LPAREN Condition RPAREN
 				 |
-				 (ErrorIfBlockStart) IF LPAREN error:l RPAREN
+				 (ErrorIfBlockStart) IfCreatePatchingStacks LPAREN error:l RPAREN
 				 {: parser.report_error("Izvrsen IfBlock oporavak do ) u liniji " + lleft, null); :}
 				 ;
+
+IfCreatePatchingStacks ::= (IfCreatePatchingStacks) IF;
 
 ForLoopBegin ::= (ForLoopBegin) FOR LPAREN;
 ForLoopFirstParam ::= (HasForFirstParam) DesignatorStatement
@@ -290,9 +297,11 @@ ActPars ::= (MiddleActPars) ActPars COMMA Expr
 
 
 
-Condition ::= (MiddleCondition) Condition VLINEVLINE CondTerm
+Condition ::= (MiddleCondition) Condition OrOperation CondTerm
 			  |
 			  (LastCondition) CondTerm;
+
+OrOperation ::= (OrOperation) VLINEVLINE;
 
 CondTerm ::= (MiddleCondTerm) CondTerm AMPERAMPER CondFact
 			 |
@@ -310,7 +319,10 @@ Expr ::= (NoTExpr) NoTernaryExpr
 		 (HasTExpr) HasTernaryExpr
 		 ;
 
-HasTernaryExpr ::= (TernaryExpr) Condition QMARK NoTernaryExpr COLON Expr;
+HasTernaryExpr ::= (TernaryExpr) Condition TernaryExprFirst Expr TernaryExprSecond Expr;
+
+TernaryExprFirst ::= (TernaryExprFirst) QMARK;
+TernaryExprSecond ::= (TernaryExprSecond) COLON;
 
 NoTernaryExpr ::= (NoTernaryExpr) TermList;
 

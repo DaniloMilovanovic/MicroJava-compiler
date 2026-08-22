@@ -801,9 +801,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	public void visit(TernaryExpr expr) {
 		
-		if(expr.getNoTernaryExpr().struct.equals(expr.getExpr().struct)){
+		if(expr.getExpr().struct.equals(expr.getExpr1().struct)){
 			if(expr.getCondition().struct == TabExtended.boolType) {
-				expr.struct = expr.getNoTernaryExpr().struct;
+				expr.struct = expr.getExpr().struct;
 			}
 			else {
 				expr.struct = TabExtended.noType;
