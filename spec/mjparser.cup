@@ -98,6 +98,8 @@ nonterminal NumConst, CharConst, BoolConst;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, VarDeclType;
 
+nonterminal FindAnyKeyword;
+
 precedence left ELSE;
 
 
@@ -376,10 +378,12 @@ ArrayDesignatorName ::= (ArrayDesignatorName) IDENT:baseName;
 
 PeriodElem ::= (LenPeriodElem) LEN
 			   |
-			   (FindAnyPeriodElem) FINDANY LPAREN Expr RPAREN
+			   (FindAnyPeriodElem) FindAnyKeyword LPAREN Expr RPAREN
 			   |
 			   (MapPeriodElem) MAP LPAREN IDENT:mapElem ARROW Expr RPAREN
 			   ;
+
+FindAnyKeyword ::= (FindAnyKeyword) FINDANY;
 
 Assignop ::= (Assignop) EQUAL;
 

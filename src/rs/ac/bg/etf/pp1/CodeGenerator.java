@@ -10,10 +10,14 @@ import java.util.*;
 
 public class CodeGenerator extends VisitorAdaptor {
 
+    private static final int TEMP_SLOTS = 4;
+
     private int mainPc = -1;
     private Obj currentMethod = null;
     private int paramsCount = 0;
     private int localsCount = 0;
+
+    private Obj[] temp = new Obj[TEMP_SLOTS];
 
     private Map<SyntaxNode, List<Integer>> falseJumps = new HashMap<SyntaxNode, List<Integer>>();
     private Map<SyntaxNode, List<Integer>> trueJumps = new HashMap<SyntaxNode, List<Integer>>();
@@ -65,12 +69,19 @@ public class CodeGenerator extends VisitorAdaptor {
 
         paramsCount = mDecl.obj.getLevel();
         localsCount = mDecl.obj.getLocalSymbols().size() - paramsCount;
+
+        for (int i = 0; i < TEMP_SLOTS; i++) {
+            temp[i] = new Obj(Obj.Var, "$tmp" + i, Tab.intType);
+            temp[i].setAdr(localsCount + i);
+            temp[i].setLevel(1);
+        }
+
         currentMethod = mDecl.obj;
         currentMethod.setAdr(Code.pc);
 
         Code.put(Code.enter);
         Code.put(paramsCount);
-        Code.put(localsCount);
+        Code.put(localsCount + TEMP_SLOTS);
     }
 
     public void visit(VMethodDecl mDecl) {
@@ -79,12 +90,19 @@ public class CodeGenerator extends VisitorAdaptor {
         }
         paramsCount = mDecl.obj.getLevel();
         localsCount = mDecl.obj.getLocalSymbols().size() - paramsCount;
+
+        for (int i = 0; i < TEMP_SLOTS; i++) {
+            temp[i] = new Obj(Obj.Var, "$tmp" + i, Tab.intType);
+            temp[i].setAdr(localsCount + i);
+            temp[i].setLevel(1);
+        }
+
         currentMethod = mDecl.obj;
         currentMethod.setAdr(Code.pc);
 
         Code.put(Code.enter);
         Code.put(paramsCount);
-        Code.put(localsCount);
+        Code.put(localsCount + TEMP_SLOTS);
     }
 
     public void visit(MethodDecl mDecl) {
@@ -149,28 +167,91 @@ public class CodeGenerator extends VisitorAdaptor {
     }
 
     //DESIGNATOR
-    public void visit(BaseDesignator baseDesignator) {
-        //Obrada u DesignatorFactor
+    public void visit(BaseDesignator baseDesignator){
+        if(baseDesignator.obj.getKind() != Obj.Meth){
+            Code.load(baseDesignator.obj);
+        }
     }
-
 
     public void visit(PeriodDesignator node) {
 
         PeriodElem elem = node.getPeriodElem();
 
-        if (elem instanceof LenPeriodElem) {
-
-            LenPeriodElem lenElem = (LenPeriodElem) elem;
-            Code.load(lenElem.obj);
+        if(elem instanceof LenPeriodElem){//elem.obj is not used, we use node.obj to get the address of the array
+            Code.load(elem.obj);
             Code.put(Code.arraylength);
         }
+
+        /*
+            temp[0] = val
+            temp[1] = addr
+            temp[2] = i
+            temp[3] = arrSize
+
+         */
+        if(elem instanceof  FindAnyPeriodElem){
+            int checkAddr;
+            int falseEndJumpFixup;
+            int trueEndJumpFixup;
+
+            Code.store(temp[0]);//val was loaded by Expr
+            Code.load(elem.obj);
+            Code.store(temp[1]);//address of array
+            Code.loadConst(-1);
+            Code.store(temp[2]);//i is -1 at the beginning
+            Code.load(elem.obj);
+            Code.put(Code.arraylength);
+            Code.store(temp[3]);//ArrayLength
+
+            checkAddr = Code.pc;
+
+            Code.load(temp[2]);//load i and increment it
+            Code.loadConst(1);
+            Code.put(Code.add);
+            Code.store(temp[2]);
+
+            Code.load(temp[2]);//load i
+            Code.load(temp[3]);//load arrayLength
+            Code.putFalseJump(Code.lt, 0);//if i >= arrayLength jump to false end
+
+            falseEndJumpFixup = Code.pc - 2;
+
+            Code.load(temp[1]);//Load addr
+            Code.load(temp[2]);//Load i
+            Code.put(Code.aload);//load arr[i]
+            Code.load(temp[0]);//load val
+            Code.putFalseJump(Code.eq, checkAddr);//jump if not equal, if equal write 1 to expr stack
+
+            Code.loadConst(1);//load 1 to expr stack
+            Code.putJump(0);//jump to end
+            trueEndJumpFixup = Code.pc - 2;
+
+            Code.fixup(falseEndJumpFixup);//if i >= arrLength put 0 on expr stack
+
+            Code.loadConst(0);
+            Code.fixup(trueEndJumpFixup);//End of execution
+
+        }
+        /*
+
+Designator ::= (PeriodDesignator) IDENT:baseName PERIOD PeriodElem;
+
+PeriodElem ::= (FindAnyPeriodElem) FindAnyKeyword LPAREN Expr RPAREN;
+
+
+ */
+
     }
 
-    public void visit(ArrayDesignatorName node) {
+    public void visit(FindAnyKeyword node){
+
+    }
+
+    public void visit(ArrayDesignatorName node){
         Code.load(node.obj);
     }
 
-    public void visit(ArrayDesignator node) {
+    public void visit(ArrayDesignator node){
         //Moramo znati da li se koristi za citanje ili pisanje
         SyntaxNode parent = node.getParent();
 
@@ -271,14 +352,7 @@ public class CodeGenerator extends VisitorAdaptor {
 
 
     public void visit(DesignatorFactor designatorFactor) {
-        Designator des = designatorFactor.getDesignator();
-
-        if (des instanceof BaseDesignator) {
-            BaseDesignator baseDes = (BaseDesignator) des;
-            if (baseDes.obj.getKind() != Obj.Meth) {
-                Code.load(baseDes.obj);  // Load ONLY when reading!
-            }
-        }
+        //Visited in BaseDesignator
     }
 
     public void visit(BoolFactor boolFactor) {
@@ -564,15 +638,3 @@ public class CodeGenerator extends VisitorAdaptor {
         Code.putJump(addr);
     }
 }
-/*
-ForLoopBegin ForLoopFirstParam ForLoopConditionBegin ForLoopSecondParam ForLoopUpdateBegin
-ForLoopThirdParam ForLoopBodyBegin Statement
-
-
-continue skace na ForLoopUpdateBegin
-break skace na kraj petlje
-
-kraj petlje skace na ForLoopUpdateBegin
-trueJumps skacu na ForLoopBodyBegin
-falseJumps skacu na kraj petlje
- */

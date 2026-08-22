@@ -996,19 +996,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 			PeriodElem elem = des.getPeriodElem();
 
-			if(elem instanceof FindAnyPeriodElem || elem instanceof MapPeriodElem){
-				Struct elemType = obj.getType().getElemType();
-				if(elemType != TabExtended.intType &&
-						elemType != TabExtended.charType &&
-						elemType != TabExtended.boolType) {
-					report_error("Niz " + des.getBaseName() + " nije ugrađenog tipa. Greska", des);
-					des.obj = TabExtended.noObj;
-					return;
-				}
-			}
-
 			if(elem instanceof LenPeriodElem){
-				// .length → int constant
+				// .length => int constant
 				des.obj = new Obj(Obj.Con, des.getBaseName() + ".length", TabExtended.intType);
 				elem.obj = obj;
 				report_info("Pristup duzini niza " + des.getBaseName() + ". Info", des, des.obj);
@@ -1021,6 +1010,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				if(!exprType.compatibleWith(elemType)){
 					report_error("Expr nije kompatibilan sa tipom elemenata niza. Greska", findAny);
 				}
+				if(elemType != TabExtended.intType && elemType != TabExtended.charType && elemType != TabExtended.boolType){
+					report_error("Niz " + des.getBaseName() + " nije ugrađenog tipa. Greska", des);
+					des.obj = TabExtended.noObj;
+					return;
+				}
+				findAny.obj = obj;
 				des.obj = new Obj(Obj.Con, des.getBaseName() + ".findAny", TabExtended.boolType);
 				report_info("Poziv funkcije findAny nad nizom " + des.getBaseName() + ". Info", des, des.obj);
 			}
@@ -1043,7 +1038,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 					report_error("Expr nije kompatibilan sa tipom elemenata niza. Greska", mapElem);
 				}
 
+				if(elemType != TabExtended.intType && elemType != TabExtended.charType && elemType != TabExtended.boolType){
+					report_error("Niz " + des.getBaseName() + " nije ugrađenog tipa. Greska", des);
+					des.obj = TabExtended.noObj;
+					return;
+				}
+
 				// map returns array of same type
+				mapElem.obj = obj;
 				des.obj = new Obj(Obj.Con, des.getBaseName() + ".map", obj.getType());
 				report_info("Poziv funkcije map nad nizom " + des.getBaseName() + ". Info", des, des.obj);
 			}
