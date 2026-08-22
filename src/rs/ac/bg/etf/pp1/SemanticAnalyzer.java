@@ -1023,10 +1023,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				MapPeriodElem mapElem = (MapPeriodElem) elem;
 				Struct elemType = obj.getType().getElemType();
 
-				Obj identObj = TabExtended.find(mapElem.getMapElem());
+				Obj identObj = TabExtended.find(mapElem.getMapIdent().getName());
+
 				if(identObj != TabExtended.noObj) {
 					if(!identObj.getType().compatibleWith(elemType)){
-						report_error("Identifikator " + mapElem.getMapElem() + " nije istog tipa kao elementi niza. Greska", mapElem);
+						report_error("Identifikator " + mapElem.getMapIdent().getName() +
+								" nije istog tipa kao elementi niza. Greska", mapElem);
 					}
 					else{
 						report_info("Pretraga prilikom obrade map identifikatora. Info", mapElem, identObj);
@@ -1045,7 +1047,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				}
 
 				// map returns array of same type
-				mapElem.obj = obj;
+				mapElem.obj = obj;//The array
+				mapElem.getMapIdent().obj = identObj;//The identifier
 				des.obj = new Obj(Obj.Con, des.getBaseName() + ".map", obj.getType());
 				report_info("Poziv funkcije map nad nizom " + des.getBaseName() + ". Info", des, des.obj);
 			}

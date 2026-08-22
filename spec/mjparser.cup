@@ -90,7 +90,8 @@ nonterminal FactorList;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Factor, ActParsFactor,  FactorName;
 
 nonterminal DesignatorName;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem, PeriodElem, ArrayDesignatorName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorElemList, DesignatorElem, PeriodElem, ArrayDesignatorName, MapIdent;
+
 
 nonterminal Assignop, Relop, Addop, Mulop;
 
@@ -380,8 +381,10 @@ PeriodElem ::= (LenPeriodElem) LEN
 			   |
 			   (FindAnyPeriodElem) FindAnyKeyword LPAREN Expr RPAREN
 			   |
-			   (MapPeriodElem) MAP LPAREN IDENT:mapElem ARROW Expr RPAREN
+			   (MapPeriodElem) MAP LPAREN MapIdent ARROW Expr RPAREN
 			   ;
+
+MapIdent ::= (MapIdent) IDENT:name;
 
 FindAnyKeyword ::= (FindAnyKeyword) FINDANY;
 

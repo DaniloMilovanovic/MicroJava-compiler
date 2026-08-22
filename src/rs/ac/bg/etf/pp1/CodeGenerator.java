@@ -29,7 +29,9 @@ public class CodeGenerator extends VisitorAdaptor {
     private Map<SyntaxNode, Integer> forLoopUpdate = new HashMap<SyntaxNode, Integer>();
     private Map<SyntaxNode, List<Integer>> forLoopBreaks = new HashMap<SyntaxNode, List<Integer>>();
 
-
+    int checkAddr;
+    int falseEndJumpFixup;
+    int trueEndJumpFixup;
 
     private List<Integer> getListForNode(Map<SyntaxNode, List<Integer>> m, SyntaxNode n) {
         List<Integer> l = m.get(n);
@@ -190,9 +192,6 @@ public class CodeGenerator extends VisitorAdaptor {
 
          */
         if(elem instanceof  FindAnyPeriodElem){
-            int checkAddr;
-            int falseEndJumpFixup;
-            int trueEndJumpFixup;
 
             Code.store(temp[0]);//val was loaded by Expr
             Code.load(elem.obj);
@@ -218,7 +217,7 @@ public class CodeGenerator extends VisitorAdaptor {
 
             Code.load(temp[1]);//Load addr
             Code.load(temp[2]);//Load i
-            Code.put(Code.aload);//load arr[i]
+            Code.put(Code.aload);//load arr[i]//TODO FIX FOR BALOAD
             Code.load(temp[0]);//load val
             Code.putFalseJump(Code.eq, checkAddr);//jump if not equal, if equal write 1 to expr stack
 
@@ -232,19 +231,77 @@ public class CodeGenerator extends VisitorAdaptor {
             Code.fixup(trueEndJumpFixup);//End of execution
 
         }
+
         /*
+        temp[0] = ident
+        temp[1] = addr
+        temp[2] = i
+        temp[3] = newArrAddr
+         */
 
-Designator ::= (PeriodDesignator) IDENT:baseName PERIOD PeriodElem;
-
-PeriodElem ::= (FindAnyPeriodElem) FindAnyKeyword LPAREN Expr RPAREN;
-
-
- */
-
+        if(elem instanceof MapPeriodElem){
+            Code.put(Code.astore);
+            Code.putJump(checkAddr);
+            Code.fixup(falseEndJumpFixup);
+            Code.load(temp[3]);
+        }
     }
 
-    public void visit(FindAnyKeyword node){
+    /*
+       temp[0] = ident
+       temp[1] = addr
+       temp[2] = i
+       temp[3] = newArrAddr
+    */
+    public void visit(MapIdent node){
+        PeriodElem elem = (PeriodElem) node.getParent();
+        MapIdent mapIdent = node;
+        Struct type = elem.obj.getType().getElemType();
 
+        temp[0] = mapIdent.obj;
+        Code.load(elem.obj);
+        Code.store(temp[1]);//address of array
+        Code.loadConst(-1);
+        Code.store(temp[2]);//i is -1 at the beginning
+
+        Code.load(temp[1]);//load the new array length
+        Code.put(Code.arraylength);
+
+        Code.put(Code.newarray);//create the new array
+
+        if(type == TabExtended.intType){
+            Code.put(1);//word array
+        }
+        else if(type == TabExtended.charType){
+            Code.put(0);//byte array
+        }
+        else if(type == TabExtended.boolType){
+            Code.put(1);//word array
+        }
+
+        Code.store(temp[3]);//new array addr
+
+        checkAddr = Code.pc;
+
+        Code.load(temp[2]);//load i and increment it
+        Code.loadConst(1);
+        Code.put(Code.add);
+        Code.store(temp[2]);
+
+        Code.load(temp[2]);//load i
+        Code.load(temp[1]);//load arrayLength
+        Code.put(Code.arraylength);
+        Code.putFalseJump(Code.lt, 0);//if i >= arrayLength jump to end
+
+        falseEndJumpFixup = Code.pc - 2;
+
+        Code.load(temp[1]);//Load addr
+        Code.load(temp[2]);//Load i
+        Code.put(Code.aload);//load arr[i]
+        Code.store(temp[0]);//store to ident
+        Code.load(temp[3]);//Load addr
+        Code.load(temp[2]);//Load i
+        //now the expr is loaded and then we jump to checkaddr
     }
 
     public void visit(ArrayDesignatorName node){
@@ -310,7 +367,6 @@ PeriodElem ::= (FindAnyPeriodElem) FindAnyKeyword LPAREN Expr RPAREN;
     public void visit(PlusPlusDesignatorStatement node) {
         Obj obj = node.getDesignatorStatementName().getDesignator().obj;
 
-        Code.load(obj);
         Code.loadConst(1);
         Code.put(Code.add);
         Code.store(obj);
@@ -319,7 +375,6 @@ PeriodElem ::= (FindAnyPeriodElem) FindAnyKeyword LPAREN Expr RPAREN;
     public void visit(MinusMinusDesignatorStatement node) {
         Obj obj = node.getDesignatorStatementName().getDesignator().obj;
 
-        Code.load(obj);
         Code.loadConst(1);
         Code.put(Code.sub);
         Code.store(obj);
@@ -396,11 +451,13 @@ PeriodElem ::= (FindAnyPeriodElem) FindAnyKeyword LPAREN Expr RPAREN;
 
         Code.put(Code.newarray);
 
-        if (type == TabExtended.intType) {
+        if(type == TabExtended.intType){
             Code.put(1);
-        } else if (type == TabExtended.charType) {
+        }
+        else if(type == TabExtended.charType){
             Code.put(0);
-        } else if (type == TabExtended.boolType) {
+        }
+        else if(type == TabExtended.boolType){
             Code.put(1);
         }
     }
