@@ -5,7 +5,6 @@
 		<delete>
 			<fileset dir="src/rs/ac/bg/etf/pp1">
 				<exclude name="util/Log4JUtils.java"/>
-				<exclude name="Yylex.java"/>
 				<exclude name="RuleVisitor.java"/>
 				<exclude name="SemanticAnalyzer.java"/>
 				<exclude name="TabExtended.java"/>
@@ -19,6 +18,7 @@
 				<exclude name="mjparser.cup"/>
 			</fileset>
 		</delete>
+		<delete dir="bin"/>
 	</target>
 
 	<target name="lexerGen" depends="delete">
@@ -29,7 +29,7 @@
 		</java>
 	</target>
 
-	<target name="parserGen" depends="delete">
+	<target name="parserGen" depends="delete, lexerGen">
 	    <java jar="lib/cup_v10k.jar" fork="true">
 	        <arg value="-destdir"/>
 	        <arg value="src/rs/ac/bg/etf/pp1"/>
