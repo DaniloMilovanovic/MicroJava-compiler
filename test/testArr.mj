@@ -1,0 +1,64 @@
+program testArray
+
+int niz[];
+char nizch[];
+bool nizb[];
+int i;
+{
+    void main() {
+        // Kreiranje niza
+        niz = new int[5];
+
+        // Upis u niz
+        niz[0] = 10;
+        niz[1] = 20;
+        niz[2] = 30;
+        niz[3] = 40;
+        niz[4] = 50;
+
+        // Čitanje iz niza
+        print(niz[0]);
+        print(eol);
+        print(niz[2]);
+        print(eol);
+        print(niz[4]);
+        print(eol);
+        print(eol);
+
+        // Pristup sa promenljivom
+        i = 1;
+        print(niz[i]);
+        print(eol);
+        print(eol);
+
+        // Dužina niza
+        print(niz.length);
+        print(eol);
+        print(eol);
+
+        // Char niz
+        nizch = new char[3];
+        nizch[0] = 'A';
+        nizch[1] = 'B';
+        nizch[2] = 'C';
+
+        print(nizch[0]);
+        print(eol);
+        print(nizch[2]);
+        print(eol);
+        print(eol);
+
+        // Bool niz
+        nizb = new bool[3];
+        nizb[0] = true;
+        nizb[1] = false;
+        nizb[2] = true;
+
+        print(nizb[0]);
+        print(eol);
+        print(nizb[1]);
+        print(eol);
+        print(nizb[2]);
+        print(eol);
+    }
+}

@@ -1,0 +1,40 @@
+program testMap
+
+int niz[];
+int niz2[];
+int i;
+{
+    void main() {
+        // Kreiranje niza
+        niz = new int[5];
+        niz[0] = 1;
+        niz[1] = 2;
+        niz[2] = 3;
+        niz[3] = 4;
+        niz[4] = 5;
+
+        // map - množenje
+        niz2 = niz.map(i => i * 10);
+
+        print(niz2[0]);
+        print(eol);
+        print(niz2[2]);
+        print(eol);
+        print(niz2[4]);
+        print(eol);
+        print(eol);
+
+        // map - sabiranje
+        niz2 = niz.map(i => i + 100);
+
+        print(niz2[0]);
+        print(eol);
+        print(niz2[1]);
+        print(eol);
+        print(eol);
+
+        // Dužina novog niza
+        print(niz2.length);
+        print(eol);
+    }
+}

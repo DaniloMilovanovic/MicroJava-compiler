@@ -1,0 +1,46 @@
+program testIf
+
+int a;
+int b;
+bool flag;
+{
+    void main() {
+        a = 5;
+        b = 10;
+        
+        // If sa true uslovom
+        if(a < b) print(1);
+        print(eol);
+        
+        // If sa false uslovom
+        if(a > b) print(2);
+        print(eol);
+        
+        // If/else sa true uslovom
+        if(a == 5) 
+            print(3);
+        else 
+            print(4);
+        print(eol);
+        
+        // If/else sa false uslovom
+        if(a > 10)
+            print(5);
+        else
+            print(6);
+        print(eol);
+        
+        // If sa bool promenljivom
+        flag = true;
+        if(flag) print(7);
+        print(eol);
+        
+        // Ugneždeni if
+        if(a > 0) {
+            if(b > 5) {
+                print(8);
+            }
+        }
+        print(eol);
+    }
+}

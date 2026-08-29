@@ -1,0 +1,61 @@
+program testErrors
+
+const int c = 5;
+const int c2 = 5;        // GREŠKA: dupla deklaracija konstante
+
+int x;
+int x;                   // GREŠKA: dupla deklaracija promenljive
+
+int niz[];
+int y;
+int m;
+{
+    void main()
+        int z;
+        int z;           // GREŠKA: dupla deklaracija lokalne promenljive
+    {
+        // Dodela pogrešnog tipa
+        y = 10;
+        y = 'a';         // GREŠKA: char u int promenljivu
+
+        // Dodela konstanti
+        c = 20;          // GREŠKA: dodela konstanti
+
+        // Nedeklarisana promenljiva
+        print(nepoznata); // GREŠKA: nedeklarisana promenljiva
+
+        // findAny vraća bool, x je int
+        x = niz.findAny(5); // GREŠKA: pogrešan tip
+
+        // Uslov nije bool
+        if(5) {          // GREŠKA: uslov nije bool
+            print(1);
+        }
+
+        // Pristup .length na ne-nizu
+        print(y.length);  // GREŠKA: y nije niz
+
+        // Indeks niza nije int
+        print(niz['a']);  // GREŠKA: indeks nije int
+
+        // findAny na ne-nizu
+        y = niz.findAny(5); // GREŠKA: y je int, findAny vraća bool
+
+        // Poziv nedeklarisane funkcije
+        nepostojeca();    // GREŠKA: funkcija ne postoji
+
+        // Povratak iz petlje
+        break;            // GREŠKA: break van petlje
+        continue;         // GREŠKA: continue van petlje
+
+        // Ternarni sa različitim tipovima
+        print(true ? 5 : 'a'); // GREŠKA: int vs char
+
+        // Ternarni sa ne-bool uslovom
+        print(5 ? 1 : 2);  // GREŠKA: uslov nije bool
+
+        // Korektne stvari (ne bi trebalo da daju greške)
+        y = 10;
+        y++;              // OK: int inkrement
+    }
+}

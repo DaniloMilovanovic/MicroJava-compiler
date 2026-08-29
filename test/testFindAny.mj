@@ -1,0 +1,65 @@
+program testFindAny
+
+int niz[];
+char nizch[];
+bool result;
+{
+    void main() {
+        // Kreiranje niza
+        niz = new int[5];
+        niz[0] = 10;
+        niz[1] = 20;
+        niz[2] = 30;
+        niz[3] = 40;
+        niz[4] = 50;
+
+        // findAny - pronađen
+        result = niz.findAny(30);
+        print(result);
+        print(eol);
+
+        // findAny - nije pronađen
+        result = niz.findAny(99);
+        print(result);
+        print(eol);
+        print(eol);
+
+        // findAny sa izrazom
+        result = niz.findAny(20 + 10);
+        print(result);
+        print(eol);
+        print(eol);
+
+        // Char niz
+        nizch = new char[3];
+        nizch[0] = 'A';
+        nizch[1] = 'B';
+        nizch[2] = 'C';
+
+        result = nizch.findAny('B');
+        print(result);
+        print(eol);
+
+        result = nizch.findAny('Z');
+        print(result);
+        print(eol);
+        print(eol);
+
+        // findAny u if uslovu
+        if(niz.findAny(40)) {
+            print(1);
+        }
+        else {
+            print(0);
+        }
+        print(eol);
+
+        if(niz.findAny(100)) {
+            print(1);
+        }
+        else {
+            print(0);
+        }
+        print(eol);
+    }
+}

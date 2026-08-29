@@ -83,7 +83,7 @@ int niz[], niz2[], niz3[], niz4[];
 		print(verify() ? 't' : 'f');
 		
 		niz2 = new int[5];
-		niz2[0] = 0; niz2[1 = 1; niz2[2] = 2; niz2[3] = 3; niz2[4] = 4; 
+		niz2[0] = 0; niz2[1] = 1; niz2[2] = 2; niz2[3] = 3; niz2[4] = 4;
 		
 		niz3 = niz2.map(i => i * 5);
 		for(i = 0; i < niz3.length; i++){

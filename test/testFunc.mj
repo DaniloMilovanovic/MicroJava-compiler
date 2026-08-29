@@ -1,0 +1,54 @@
+program testFunc
+
+int result;
+{
+    int add(int a, int b) {
+        return a + b;
+    }
+    
+    int multiply(int a, int b) {
+        return a * b;
+    }
+    
+    int doubleIt(int x) {
+        return x * 2;
+    }
+    
+    char getChar() {
+        return 'A';
+    }
+    
+    bool getTrue() {
+        return true;
+    }
+    
+    void main() {
+        // Prost poziv funkcije
+        print(add(5, 10));
+        print(eol);
+        
+        // Ugnježdeni poziv
+        print(multiply(add(2, 3), 4));
+        print(eol);
+        
+        // Poziv u dodeli
+        result = doubleIt(7);
+        print(result);
+        print(eol);
+        print(eol);
+        
+        // Funkcija vraća char
+        print(getChar());
+        print(eol);
+        
+        // Funkcija vraća bool
+        print(getTrue());
+        print(eol);
+        
+        // ord i chr
+        print(ord('Z'));
+        print(eol);
+        print(chr(66));
+        print(eol);
+    }
+}

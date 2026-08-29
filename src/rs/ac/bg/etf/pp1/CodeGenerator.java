@@ -217,7 +217,16 @@ public class CodeGenerator extends VisitorAdaptor {
 
             Code.load(temp[1]);//Load addr
             Code.load(temp[2]);//Load i
-            Code.put(Code.aload);//load arr[i]//TODO FIX FOR BALOAD
+            if(elem.obj.getType().getElemType() == TabExtended.intType){
+                Code.put(Code.aload);
+            }
+            else if(elem.obj.getType().getElemType() == TabExtended.charType){
+                Code.put(Code.baload);
+            }
+            else if(elem.obj.getType().getElemType() == TabExtended.boolType){
+                Code.put(Code.aload);
+            }
+
             Code.load(temp[0]);//load val
             Code.putFalseJump(Code.eq, checkAddr);//jump if not equal, if equal write 1 to expr stack
 

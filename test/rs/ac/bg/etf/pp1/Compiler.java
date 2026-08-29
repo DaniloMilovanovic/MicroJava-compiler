@@ -12,54 +12,59 @@ import rs.ac.bg.etf.pp1.util.Log4JUtils;
 import rs.etf.pp1.mj.runtime.Code;
 import rs.etf.pp1.symboltable.Tab;
 
-public class Compiler {
+public class Compiler{
 
-	static {
+	static{
 		DOMConfigurator.configure(Log4JUtils.instance().findLoggerConfigFile());
 		Log4JUtils.instance().prepareLogFile(Logger.getRootLogger());
 	}
 
-	public static void tsdump() {
+	public static void tsdump(){
 		TabExtended.dump();
 	}
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception{
 
-		Logger log = Logger.getLogger(MJParserTest.class);
+		Logger log = Logger.getLogger(Compiler.class);
+
+		if(args.length < 2){
+			System.err.println("Usage: Compiler <input.mj> <output.obj>");
+			return;
+		}
 
 		Reader br = null;
-		try {
-			File sourceCode = new File("test/simpleTestCodeGeneration.mj");
+		try{
+			File sourceCode = new File(args[0]);
+			File objFile = new File(args[1]);
+
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 
 			br = new BufferedReader(new FileReader(sourceCode));
 			Yylex lexer = new Yylex(br);
 
-
 			TabExtended.init();
 
 			MJParser p = new MJParser(lexer);
-			Symbol s = p.parse();  //pocetak parsiranja
+			Symbol s = p.parse();
 
 			Program prog = (Program)(s.value);
-			// ispis sintaksnog stabla
+
 			log.info(prog.toString(""));
 			log.info("===================================");
 
-			// ispis prepoznatih programskih konstrukcija
 			SemanticAnalyzer v = new SemanticAnalyzer();
 			prog.traverseBottomUp(v);
 
 			log.info(" Print count calls = " + v.printCallCount);
-
 			log.info(" Deklarisanih promenljivih ima = " + v.varDeclCount);
-
 			log.info("===================================");
+
 			tsdump();
+
 			if(!p.errorDetected && v.passed()){
 				log.info("Parsiranje uspesno zavrseno!");
-				File objFile = new File("test/program.obj");
-				if (objFile.exists()) objFile.delete();
+
+				if(objFile.exists()) objFile.delete();
 
 				CodeGenerator codeGenerator = new CodeGenerator();
 				prog.traverseBottomUp(codeGenerator);
@@ -67,15 +72,18 @@ public class Compiler {
 				Code.mainPc = codeGenerator.getMainPc();
 				Code.write(new FileOutputStream(objFile));
 				log.info("Generisanje koda uspesno zavrseno!");
-			}else{
+			}
+			else{
 				log.error("Parsiranje NIJE uspesno zavrseno!");
 			}
 		}
-		finally {
-			if (br != null) try { br.close(); } catch (IOException e1) { log.error(e1.getMessage(), e1); }
+		finally{
+			if(br != null) try{
+				br.close();
+			}
+			catch(IOException e1){
+				log.error(e1.getMessage(), e1);
+			}
 		}
-
 	}
-
-
 }

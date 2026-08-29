@@ -1,0 +1,50 @@
+program testTernary
+
+int a;
+int b;
+int result;
+bool flag;
+{
+    void main() {
+        a = 5;
+        b = 10;
+
+        // Osnovni ternarni (true uslov)
+        print(a < b ? 1 : 2);
+        print(eol);
+
+        // Osnovni ternarni (false uslov)
+        print(a > b ? 1 : 2);
+        print(eol);
+        print(eol);
+
+        // Ternarni u dodeli
+        result = a == 5 ? 100 : 200;
+        print(result);
+        print(eol);
+
+        result = a == 6 ? 100 : 200;
+        print(result);
+        print(eol);
+        print(eol);
+
+        // Ternarni sa izrazom
+        print(a > 3 ? a + b : a - b);
+        print(eol);
+        print(eol);
+
+        // Ternarni sa bool promenljivom
+        flag = true;
+        print(flag ? 'T' : 'F');
+        print(eol);
+
+        flag = false;
+        print(flag ? 'T' : 'F');
+        print(eol);
+        print(eol);
+
+        // Ugnježdeni ternarni
+        print(a > 10 ? 1 : (a > 3 ? 2 : 3));
+        print(eol);
+    }
+}
